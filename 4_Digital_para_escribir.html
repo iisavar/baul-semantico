@@ -344,28 +344,6 @@
   </div>
 </section>
 
-<!-- 2b. Ejemplo resuelto para el niño -->
-<section id="ejemplo" class="pantalla">
-  <div class="lienzo">
-    <div class="marco"><img src="img_laminas/ejemplo.jpg" alt="Ejemplo"><div class="pestana" style="background:#595959">Ejemplo</div></div>
-    <div class="respuestas">
-      <p style="font-size:22px;margin:0 0 4px" id="ej-titulo"><b>Mira este ejemplo.</b> Así se responde:</p>
-      <label>¿Qué es esto?</label>
-      <input value="un perro" disabled>
-      <label>¿A qué grupo pertenece?</label>
-      <input value="es un animal" disabled>
-      <p class="grupo-explica">El <b>grupo</b> es qué tipo de cosa es: un animal, una planta, una cosa…</p>
-      <label>Cuéntame, ¿qué sabes de esto? <span class="ayuda">(puedes escribir una, dos o tres cosas)</span></label>
-      <div class="tres">
-        <span>1.</span><input value="ladra" disabled>
-        <span>2.</span><input value="tiene cuatro patas" disabled>
-        <span>3.</span><input value="cuida la casa" disabled>
-      </div>
-      <div class="nav"><span></span><button class="btn" id="b-ejemplo" style="font-size:20px">¡Ahora tú! →</button></div>
-    </div>
-  </div>
-</section>
-
 <!-- 3. Portada de región -->
 <section id="portada" class="pantalla">
   <div class="banda" id="p-titulo">REGIÓN COSTA</div>
@@ -546,7 +524,7 @@ function borrarGuardado() { try { localStorage.removeItem(CLAVE_GUARDADO); } cat
 const $ = id => document.getElementById(id);
 const iniciales = n => String(n || "").split(/\s+/).filter(Boolean).map(x => x[0].toUpperCase() + ".").join(" ");
 const esc = t => String(t ?? "").replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
-const PANTALLAS_NINO = ["bienvenida", "ejemplo", "portada", "lamina", "fin"];
+const PANTALLAS_NINO = ["bienvenida", "portada", "lamina", "fin"];
 function mostrar(id) {
   document.querySelectorAll(".pantalla").forEach(p => p.classList.toggle("activa", p.id === id));
   // el indicador técnico no se muestra en las pantallas que ve el estudiante cuando él escribe
@@ -584,13 +562,13 @@ function ponerFoto(img, src) {  // la foto queda oculta hasta que carga: nunca s
 }
 function precargarFotos(destino) {  // descarga las 28 fotos al empezar y avisa si alguna falla
   let listas = 0, fallas = 0;
-  const total = 28, el = document.getElementById(destino);
+  const total = 27, el = document.getElementById(destino);
   const pintar = () => {
     if (!el) return;
     el.textContent = fallas ? `No se pudieron cargar ${fallas} foto(s). Revise el internet antes de seguir.`
       : listas < total ? `Preparando las fotos… ${listas} de ${total}` : "Fotos listas.";
   };
-  ["ejemplo", ...Array.from({ length: 27 }, (_, i) => String(i + 1).padStart(2, "0"))].forEach(n => {
+  Array.from({ length: 27 }, (_, i) => String(i + 1).padStart(2, "0")).forEach(n => {
     const im = new Image();
     im.onload = () => { listas++; pintar(); };
     im.onerror = () => { fallas++; pintar(); };
@@ -693,10 +671,6 @@ document.querySelectorAll(".opcion").forEach(b => b.onclick = () => {
 function aplicarModo() {
   document.body.dataset.escribe = estado.escribe || "estudiante";
   const doc = estado.escribe === "docente";
-  $("ej-titulo").innerHTML = doc
-    ? "<b>Ejemplo de práctica</b> (no se califica)"
-    : "<b>Mira este ejemplo.</b> Así se responde:";
-  $("b-ejemplo").textContent = doc ? "Empezar la evaluación →" : "¡Ahora tú! →";
 }
 $("b-comenzar").onclick = () => {
   const nombre = $("f-nombre").value.trim();
@@ -729,10 +703,9 @@ $("b-comenzar").onclick = () => {
     " | " + [estado.datos.grado, estado.datos.paralelo].filter(Boolean).join(" ") });
   precargarFotos("carga-escrita");
   $("saludo").textContent = nombre.split(" ")[0];
-  mostrar(estado.escribe === "docente" ? "ejemplo" : "bienvenida");  // el saludo es para el niño que escribe
+  if (estado.escribe === "docente") irAPaso(0); else mostrar("bienvenida");  // el saludo es para el niño que escribe
 };
-$("b-empezar").onclick = () => mostrar("ejemplo");
-$("b-ejemplo").onclick = () => { LOG("Vio el ejemplo de práctica"); irAPaso(0); };
+$("b-empezar").onclick = () => irAPaso(0);
 
 // ---------------------------------------------------------------- recorrido del estudiante
 function irAPaso(i) {

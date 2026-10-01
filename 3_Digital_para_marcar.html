@@ -291,23 +291,6 @@
   </div>
 </section>
 
-<!-- 1b. Ejemplo de práctica (no se califica) -->
-<section id="practica" class="pantalla">
-  <div class="escenario">
-    <div class="marco">
-      <img src="img_laminas/ejemplo.jpg" alt="Ejemplo de práctica">
-      <div class="pestana" style="background:#595959">Ejemplo</div>
-    </div>
-  </div>
-  <div class="docente">
-    <div class="practica-guia">
-      <b>Ejemplo de práctica</b> (no se califica)
-      <div class="carga" id="carga" aria-live="polite"></div>
-    </div>
-    <div class="nav"><span></span><button class="btn" id="b-practica">Empezar la evaluación →</button></div>
-  </div>
-</section>
-
 <!-- 2. Portada de región -->
 <section id="portada" class="pantalla">
   <div class="banda" id="p-titulo">REGIÓN COSTA</div>
@@ -487,13 +470,13 @@ function ponerFoto(img, src) {  // la foto queda oculta hasta que carga: nunca s
 }
 function precargarFotos(destino) {  // descarga las 28 fotos al empezar y avisa si alguna falla
   let listas = 0, fallas = 0;
-  const total = 28, el = document.getElementById(destino);
+  const total = 27, el = document.getElementById(destino);
   const pintar = () => {
     if (!el) return;
     el.textContent = fallas ? `No se pudieron cargar ${fallas} foto(s). Revise el internet antes de seguir.`
       : listas < total ? `Preparando las fotos… ${listas} de ${total}` : "Fotos listas.";
   };
-  ["ejemplo", ...Array.from({ length: 27 }, (_, i) => String(i + 1).padStart(2, "0"))].forEach(n => {
+  Array.from({ length: 27 }, (_, i) => String(i + 1).padStart(2, "0")).forEach(n => {
     const im = new Image();
     im.onload = () => { listas++; pintar(); };
     im.onerror = () => { fallas++; pintar(); };
@@ -599,9 +582,8 @@ $("b-comenzar").onclick = () => {
   guardar();
   LOG("Inicio de la evaluación", { detalle: [estado.datos.grado, estado.datos.paralelo].filter(Boolean).join(" ") });
   precargarFotos("carga");
-  mostrar("practica");
+  irAPaso(0);
 };
-$("b-practica").onclick = () => { LOG("Hizo el ejemplo de práctica"); irAPaso(0); };
 
 // ---------------------------------------------------------------- navegación
 function irAPaso(i) {
