@@ -3,467 +3,237 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>EMSEO | Digital para escribir</title>
-<style>
-  :root {
-    --tinta: #1a1a1a;
-    --gris: #595959;
-    --gris-claro: #d9d9d9;
-    --panel: #f4f4f4;
-    --linea: #bfbfbf;
-    --costa: #C39A55;
-    --sierra: #8A6A4F;
-    --amazonia: #4E7A4A;
-    --insular: #3F7A8C;
-    --region: #4E7A4A;
-  }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; }
-  body { background: #fff; color: var(--tinta); font-family: "Times New Roman", Times, Georgia, serif; font-size: 17px; }
-  button, input { font-family: inherit; font-size: inherit; }
-  button { cursor: pointer; }
-  .pantalla { display: none; min-height: 100vh; }
-  .pantalla.activa { display: flex; }
-
-  /* ---------- comunes ---------- */
-  .centrada { flex-direction: column; align-items: center; justify-content: center; padding: 24px 16px; }
-  .tarjeta { width: 100%; max-width: 560px; }
-  .uni { text-align: center; color: var(--gris); margin: 0; }
-  h1 { text-align: center; font-size: 30px; margin: 8px 0 2px; }
-  .sub { text-align: center; color: var(--gris); margin: 0 0 28px; }
-  .campo { display: grid; grid-template-columns: 150px minmax(0, 1fr); align-items: end; gap: 10px; margin: 14px 0; }
-  .campo label { text-align: right; }
-  .campo input { min-width: 0; width: 100%; border: 0; border-bottom: 1px solid var(--gris); padding: 6px 2px; background: transparent; }
-  .campo input:focus { outline: none; border-bottom: 2px solid var(--tinta); }
-  .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; }
-  .dos .campo:last-child { grid-template-columns: auto minmax(0, 1fr); }
-  .btn { border: 1px solid var(--tinta); background: var(--tinta); color: #fff; padding: 10px 26px; border-radius: 4px; }
-  .btn.sec { background: #fff; color: var(--tinta); }
-  .btn:disabled { opacity: .35; cursor: not-allowed; }
-  .centro { text-align: center; margin-top: 28px; }
-  .nota { font-size: 14px; color: var(--gris); text-align: center; margin-top: 14px; }
-  .progreso { flex: 1; height: 6px; background: var(--gris-claro); border-radius: 3px; overflow: hidden; }
-  .progreso div { height: 100%; background: var(--region); width: 0; transition: width .2s; }
-  .contador { color: var(--gris); min-width: 70px; text-align: center; }
-  .nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-
-  /* ---------- portada de región ---------- */
-  #portada { flex-direction: column; align-items: center; padding: 22px 16px; height: 100vh; }
-  .banda { width: 100%; max-width: 1100px; background: var(--region); color: #fff; text-align: center; font-weight: bold;
-    font-size: clamp(20px, 3.4vw, 38px); letter-spacing: .22em; padding: 18px 10px; }
-  #portada img { flex: 1; min-height: 0; max-width: 100%; object-fit: contain; margin: 18px 0; }
-
-  /* ---------- foto (igual que docente.html) ---------- */
-  .marco { position: relative; aspect-ratio: 4 / 3; width: 100%; }
-  .marco img { width: 100%; height: 100%; object-fit: cover; display: block; border: 8px solid #fff; box-shadow: 0 1px 6px rgba(0, 0, 0, .18); }
-  .pestana { position: absolute; top: 0; right: 0; transform: translateY(-100%); background: var(--region); color: #fff;
-    font-weight: bold; font-size: 22px; min-width: 64px; text-align: center; padding: 6px 10px; }
-
-  /* ---------- lámina del estudiante ---------- */
-  #lamina, #ejemplo { background: var(--panel); height: 100vh; }
-  /* selector «¿quién escribe?» */
-  .quien { margin-top: 22px; }
-  .quien p { text-align: center; font-weight: bold; margin: 0 0 8px; }
-  .quien .ops { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .opcion { border: 1px solid var(--linea); background: #fff; border-radius: 6px; padding: 12px; text-align: left; line-height: 1.35; }
-  .opcion b { display: block; font-size: 18px; margin-bottom: 2px; }
-  .opcion small { color: var(--gris); font-size: 14px; }
-  .opcion.sel { border: 2px solid var(--tinta); background: #f7f7f7; }
-  .quien.error .opcion { border-color: #9C2B2B; }
-  @media (max-width: 640px) { .quien .ops { grid-template-columns: 1fr; } }
-  /* modo docente: botones 0-1-2 junto a cada respuesta */
-  .solo-docente { display: none; }
-  body[data-escribe="docente"] .solo-docente { display: flex; }
-  body[data-escribe="docente"] .solo-estudiante { display: none; }
-  .pts { gap: 8px; justify-content: flex-end; margin-top: 4px; }
-  .pts .punto { width: 48px; height: 38px; }
-  body[data-escribe="docente"] .respuestas label { font-size: 18px; margin-top: 8px; }
-  body[data-escribe="docente"] .respuestas input { font-size: 18px; padding: 7px 10px; }
-  .respuestas input:disabled { color: var(--tinta); background: #fafafa; }
-  .lienzo { flex: 1; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 28px;
-    padding: 56px 28px 20px; align-items: center; max-width: 1400px; margin: 0 auto; }
-  .respuestas { display: flex; flex-direction: column; gap: 6px; }
-  .respuestas label { font-size: 22px; font-weight: bold; margin-top: 12px; }
-  .respuestas input {
-    font-size: 22px; padding: 10px 12px; border: 1px solid var(--linea); border-radius: 4px; background: #fff; width: 100%;
-  }
-  .respuestas input:focus { outline: 2px solid var(--region); border-color: var(--region); }
-  .tres { display: grid; grid-template-columns: 28px 1fr; align-items: center; gap: 6px 8px; }
-  .tres span { font-size: 20px; color: var(--gris); text-align: right; }
-  .respuestas .nav { margin-top: 18px; }
-
-  /* ---------- fin del estudiante ---------- */
-  #fin h1 { font-size: 40px; }
-  #fin p { font-size: 22px; text-align: center; }
-
-  /* ---------- calificación (docente) ---------- */
-  #calificar { background: var(--panel); flex-direction: column; }
-  .cal { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.3fr); gap: 24px; padding: 48px 24px 12px;
-    max-width: 1400px; width: 100%; margin: 0 auto; flex: 1; align-items: start; }
-  .cal h2 { margin: 0 0 8px; font-size: 22px; }
-  .fila { background: #fff; border: 1px solid var(--linea); padding: 10px 12px; margin-bottom: 10px; }
-  .fila .cab { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-  .fila .cab b { font-size: 18px; }
-  .fila .dijo { font-size: 20px; margin: 6px 0; min-height: 26px; }
-  .fila .dijo.vacio { color: #a00; font-size: 16px; }
-  .puntos { display: flex; gap: 8px; }
-  .punto { width: 52px; height: 40px; border: 1px solid var(--gris); background: #fff; border-radius: 4px; font-size: 20px; }
-  .punto.sel { background: var(--tinta); color: #fff; border-color: var(--tinta); }
-  .barra-cal { padding: 10px 24px 14px; border-top: 1px solid var(--linea); background: var(--panel); }
-  .barra-cal .nav { max-width: 1400px; margin: 0 auto; }
-
-  /* ---------- resultados ---------- */
-  #resultados { flex-direction: column; align-items: center; padding: 24px 16px; }
-  #resultados .tarjeta { max-width: 860px; }
-  table { border-collapse: collapse; width: 100%; margin: 12px 0; }
-  th, td { border: 1px solid var(--linea); padding: 6px 8px; text-align: center; vertical-align: top; }
-  th { background: #e4e4e4; }
-  td:first-child, th:first-child { text-align: left; }
-  td.txt { text-align: left; font-size: 15px; }
-  tr.reg td { background: #f2f2f2; font-weight: bold; }
-  .grande { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0; }
-  .grande div { border: 1px solid var(--linea); padding: 12px 16px; }
-  .grande span { display: block; color: var(--gris); font-size: 14px; }
-  .grande strong { font-size: 30px; }
-  .niveles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
-  .niveles div { border: 1px solid var(--linea); padding: 8px 4px; text-align: center; font-size: 14px; }
-  .niveles div.es { background: var(--tinta); color: #fff; border-color: var(--tinta); }
-  .acciones { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 20px; }
-  details { margin-top: 18px; }
-  summary { cursor: pointer; color: var(--gris); }
-
-  @media (max-width: 860px) {
-    .lienzo, .cal { grid-template-columns: 1fr; padding-top: 52px; }
-    #lamina { height: auto; }
-    .campo { grid-template-columns: 1fr; }
-    .campo label { text-align: left; }
-    .dos { grid-template-columns: 1fr; }
-    .grande, .niveles { grid-template-columns: 1fr; }
-  }
-  .sync { position: fixed; left: 10px; bottom: 8px; font-size: 12px; color: var(--gris); background: rgba(255,255,255,.9);
-    border: 1px solid var(--linea); border-radius: 12px; padding: 2px 10px; z-index: 5; }
-  .sync[data-tipo="ok"] { color: #2E6B1F; }
-  .sync[data-tipo="pendiente"] { color: #7A6200; }
-  .bitacora td { font-size: 13px; text-align: left; }
-  .bitacora td:first-child { white-space: nowrap; }
-  @media print { .acciones, summary, .sync { display: none; } details { display: block; } }
-
-  /* ===== Mejoras de diseño (revisión de 10 especialistas, 30/09/2026) ===== */
-  :root { --linea: #9a9a9a; --region-texto: #fff;
-          --foto-w: min(640px, 92vw, calc((100vh - 300px) * 4 / 3)); }
-  @supports (height: 100dvh) { :root { --foto-w: min(640px, 92vw, calc((100dvh - 300px) * 4 / 3)); } }
-  body { font-size: 18px; }
-  .franja { position: fixed; top: 0; left: 0; right: 0; height: 4px; z-index: 6;
-    background: linear-gradient(90deg, var(--costa) 0 25%, var(--sierra) 25% 50%, var(--amazonia) 50% 75%, var(--insular) 75%); }
-  .sync { left: auto; right: 12px; top: 10px; bottom: auto; font-size: 13px; }
-  body.vista-nino .sync { display: none; }
-  .banda, .pestana { color: var(--region-texto); }
-  .marco { width: var(--foto-w); height: auto; max-width: 100%; }
-  .marco img { aspect-ratio: 4 / 3; height: auto; }
-  .marco img.cargando { visibility: hidden; }
-  .aviso-foto { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-    text-align: center; color: #7A4A12; padding: 24px; font-size: 18px; }
-  .punto.sel { background: #e4e4e4; color: var(--tinta); border: 2px solid #595959; font-weight: bold; }
-  .btn:disabled { opacity: .55; }
-  :focus-visible { outline: 3px solid #3F7A8C; outline-offset: 2px; }
-  .falta { max-width: 980px; margin: 4px auto 0; text-align: right; font-size: 14px; color: #7A4A12; min-height: 18px; }
-  .error-msg { color: #9C2B2B; font-size: 15px; text-align: center; margin: 10px 0 0; }
-  .volver { display: inline-block; margin-bottom: 10px; color: var(--gris); font-size: 15px; text-decoration: none; }
-  .volver:hover { text-decoration: underline; }
-  .carga { font-size: 14px; color: var(--gris); margin-top: 6px; }
-  /* pantalla «Evaluación terminada» (antes de los resultados, para que el estudiante no los vea) */
-  #terminado { flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; background: var(--panel); }
-  #terminado h1 { font-size: 40px; margin-bottom: 6px; }
-  #terminado p { font-size: 22px; margin: 6px 0; }
-  .solo-doc { margin-top: 48px; font-size: 15px; padding: 8px 18px; }
-  /* resultados */
-  .niveles div.es { background: #ededed; color: var(--tinta); border: 2px solid var(--tinta); font-weight: bold; }
-  .niveles div.es b::before { content: "▲ "; }
-  .nivel-frase { margin: 10px 0 0; font-size: 16px; text-align: center; }
-  .barra-region { height: 6px; background: #e4e4e4; margin-top: 4px; }
-  .barra-region i { display: block; height: 100%; }
-  .acciones .btn { padding: 9px 18px; }
-  .acciones-fin { display: flex; justify-content: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--linea); }
-  .firma { display: none; }
-  @media print {
-    @page { size: A4; margin: 12mm; }
-    .franja { position: static; }
-    .franja, .niveles div, .barra-region, .barra-region i, th, tr.reg td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .acciones, .acciones-fin, #r-estado, details.registro, .volver { display: none !important; }
-    details summary { display: block !important; font-weight: bold; color: var(--tinta); }
-    .firma { display: flex; gap: 40px; margin-top: 46px; font-size: 14px; }
-    .firma span { flex: 1; border-top: 1px solid var(--tinta); padding-top: 4px; text-align: center; }
-    .pantalla { min-height: 0 !important; height: auto !important; }
-  }
-
-  /* específicos de la versión escrita */
-  #lamina, #ejemplo { height: auto; min-height: 100vh; }
-  #portada { height: auto; min-height: 100vh; }
-  .lienzo { grid-template-columns: var(--foto-w) minmax(300px, 520px); justify-content: center; gap: 32px; }
-  .cal { grid-template-columns: var(--foto-w) minmax(320px, 1fr); }
-  .ayuda { font-size: 16px; color: var(--gris); font-weight: normal; }
-  .grupo-explica { font-size: 18px; background: #fff; border: 1px solid var(--linea); padding: 8px 12px; margin: 10px 0 0; }
-  body[data-escribe="estudiante"] #lamina .contador { display: none; }
-  body[data-escribe="docente"] .grupo-explica { display: none; }
-  #fin .solo-doc { margin-top: 56px; }
-  .opcion b { font-size: 19px; }
-  @media (max-width: 860px) { .lienzo, .cal { grid-template-columns: 1fr; } .marco { margin: 0 auto; } }
-
-  /* ===== Marca UBE (consenso de 4 especialistas): logo solo en pantallas del docente; el rojo solo dentro del logo ===== */
-  :root { --ube: #E4022C; --error: #9C2B2B; }
-  .logo-ube { display: block; height: 48px; width: auto; margin: 0 auto 10px; }
-  #resultados .logo-ube { height: 40px; }
-  #bienvenida .logo-ube, #ejemplo .logo-ube, #practica .logo-ube, #portada .logo-ube, #lamina .logo-ube,
-  #fin .logo-ube, #terminado .logo-ube, #calificar .logo-ube { display: none !important; }  /* salvaguarda: nunca frente al niño */
-  .error-msg:not(:empty)::before { content: "⚠ "; }
-  @media print { .logo-ube { height: 14mm; } }
-  @media (max-width: 640px) { h1 { font-size: 26px; } .sub { font-size: 15px; } }
-
-  /* ===== Celular y tablet ===== */
-  :root { --foto-w: min(640px, calc(100vw - 32px), calc((100vh - 300px) * 4 / 3)); }
-  @supports (height: 100dvh) { :root { --foto-w: min(640px, calc(100vw - 32px), calc((100dvh - 300px) * 4 / 3)); } }
-  .tabla-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .l-corto { display: none; }
-  @media (hover: none) { .solo-pc { display: none !important; } }   /* atajos de teclado: solo en computadora */
-  @media (max-width: 640px) {
-    :root { --foto-w: calc(100vw - 32px); }
-    /* el indicador de guardado se vuelve un puntito de color en la esquina (no tapa nada) */
-    .sync { font-size: 0; width: 14px; height: 14px; padding: 0; border-radius: 50%; top: 8px; right: 8px;
-      background: #9a9a9a; border: 2px solid #fff; box-shadow: 0 0 0 1px #9a9a9a; }
-    .sync[data-tipo="ok"] { background: #2E6B1F; box-shadow: 0 0 0 1px #2E6B1F; }
-    .sync[data-tipo="pendiente"] { background: #C08A00; box-shadow: 0 0 0 1px #C08A00; }
-    /* navegación: botones en una fila y la barra de progreso debajo, a todo el ancho */
-    .nav { flex-wrap: wrap; gap: 8px; }
-    .nav .btn { white-space: nowrap; padding: 11px 16px; }
-    .nav .progreso { order: 3; flex: 1 1 100%; }
-    .contador { min-width: 0; }
-    .escenario { padding: 44px 12px 8px; }
-    .docente { padding: 8px 12px 10px; }
-    .lienzo, .cal { padding: 40px 16px 16px; gap: 16px; }
-    .pestana { font-size: 18px; min-width: 52px; padding: 4px 8px; }
-    #portada { padding-top: 28px; }
-    .banda { letter-spacing: .14em; padding: 14px 8px; }
-    /* resultados compactos */
-    #resultados { padding: 20px 12px; }
-    .grande { grid-template-columns: 1fr 1fr; gap: 8px; }
-    .grande div { padding: 10px 12px; }
-    .grande strong { font-size: 24px; }
-    .niveles { grid-template-columns: repeat(5, 1fr); gap: 4px; }
-    .niveles div { font-size: 11px; padding: 6px 2px; }
-    table { font-size: 14px; }
-    th, td { padding: 5px 4px; }
-    .l-largo { display: none; }
-    .l-corto { display: inline; }
-    .acciones .btn { flex: 1 1 100%; }
-    .acciones-fin .btn { width: 100%; }
-  }
-
-  /* datos de la muestra: listas desplegables; «Otra» abre una casilla para escribir cuál */
-  .con-otra { display: flex; gap: 10px; align-items: flex-end; min-width: 0; }
-  .con-otra select { flex: 1 1 0; min-width: 0; font: inherit; padding: 6px 2px; border: 0; border-bottom: 1px solid var(--gris);
-    background: transparent; color: var(--tinta); cursor: pointer; }
-  .con-otra select:focus { outline: none; border-bottom: 2px solid var(--tinta); }
-  .con-otra input { flex: 1 1 0; min-width: 0; font: inherit; padding: 6px 2px; border: 0; border-bottom: 1px solid var(--gris); background: transparent; }
-  .con-otra .falta-dato, .con-otra input.falta-dato { border-bottom: 2px solid var(--error, #9C2B2B); }
-
-  /* formularios largos: centrados, pero sin cortarse arriba cuando no caben */
-  #inicio, .centrada { justify-content: flex-start; }
-  #inicio > .tarjeta, .centrada > .tarjeta { margin-top: auto; margin-bottom: auto; }
-
-  /* formulario compacto en dos columnas */
-  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 22px; margin: 6px 0 4px; text-align: left; }
-  .form-grid .ancho { grid-column: 1 / -1; }
-  .dato label { display: block; font-size: 14px; color: var(--gris); margin-bottom: 2px; }
-  .dato > input, .dato > select { width: 100%; min-width: 0; font: inherit; padding: 6px 2px; border: 0;
-    border-bottom: 1px solid var(--gris); background: transparent; color: var(--tinta); }
-  .dato > select { cursor: pointer; }
-  .dato > input:focus, .dato > select:focus { outline: none; border-bottom: 2px solid var(--tinta); }
-  .dato .falta-dato { border-bottom: 2px solid var(--error, #9C2B2B) !important; }
-  @media (max-width: 400px) { .form-grid { gap: 10px 14px; } }
-  /* número de pregunta: solo lo ve el docente (el estudiante ve la pregunta sola) */
-  .num-preg { color: var(--gris); }
-  body[data-escribe="estudiante"] .num-preg { display: none; }
-</style>
+<title>Baúl Semántico | Digital para escribir</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Newsreader:opsz,wght@6..72,600&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="emseo.css">
 </head>
 <body>
-
-<!-- 1. Datos (los llena el docente) -->
-<section id="inicio" class="pantalla centrada activa">
-  <div class="tarjeta">
-    <a class="volver" href="index.html">← Volver al inicio</a>
+<!-- 1. Datos del estudiante (los llena el docente) -->
+<section id="inicio" class="pantalla activa">
+  <header class="hdr">
     <img class="logo-ube" src="img/logo_ube.png" alt="Universidad Bolivariana del Ecuador">
-    <h1>Digital para escribir</h1>
-    <p class="sub">Evaluación de Memoria Semántica mediante Evocación Oral (EMSEO)</p>
-    <div class="form-grid" id="muestra">
-      <div class="dato ancho"><label for="f-nombre">Estudiante</label><input id="f-nombre" autocomplete="off" aria-describedby="err-inicio"></div>
-      <div class="dato ancho"><label for="f-docente">Docente</label><input id="f-docente" autocomplete="off"></div>
-      <div class="dato"><label for="f-grado">Grado</label><select id="f-grado"><option value="">Seleccione…</option><option>5.º</option><option>6.º</option><option>7.º</option></select></div>
-      <div class="dato"><label for="f-paralelo">Paralelo</label><select id="f-paralelo"><option value="">Seleccione…</option><option>A</option><option>B</option><option>C</option></select></div>
-      <div class="dato"><label for="f-edad">Edad</label><select id="f-edad"><option value="">Seleccione…</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option></select></div>
-      <div class="dato"><label for="f-sexo">Sexo</label><select id="f-sexo"><option value="">Seleccione…</option><option>Masculino</option><option>Femenino</option></select></div>
-      <div class="dato"><label for="f-lengua">Lengua materna</label>
-        <div class="con-otra"><select id="f-lengua"><option value="">Seleccione…</option><option>Español</option><option>Kichwa</option><option value="otra">Otra</option></select>
-          <input id="f-lengua-otra" placeholder="¿Cuál?" aria-label="Otra lengua" hidden></div></div>
-      <div class="dato"><label for="f-origen">Origen de la familia</label>
-        <div class="con-otra"><select id="f-origen"><option value="">Seleccione…</option><option>Costa</option><option>Sierra</option><option>Amazonía</option><option>Insular</option><option value="otra">Otro país</option></select>
-          <input id="f-origen-otra" placeholder="¿Cuál?" aria-label="Otro país" hidden></div></div>
-      <div class="dato ancho"><label for="f-nee">Necesidades educativas especiales</label>
-        <div class="con-otra"><select id="f-nee"><option value="">Seleccione…</option><option>No</option><option value="otra">Sí</option></select>
-          <input id="f-nee-otra" placeholder="¿Cuál? (opcional)" aria-label="Cuál necesidad especial" hidden></div></div>
-      <input id="f-fecha" type="hidden">
-    </div>
-    <div class="quien" id="quien">
-      <p>¿Quién escribe las respuestas?</p>
-      <div class="ops">
-        <button class="opcion" data-escribe="docente" aria-pressed="false"><b>El docente</b>
-          <small>El estudiante responde en voz alta</small></button>
-        <button class="opcion" data-escribe="estudiante" aria-pressed="false"><b>El estudiante</b>
-          <small>El estudiante escribe en la computadora</small></button>
+    <div class="hdr-der"><span class="app-nombre">Digital para escribir</span><a class="volver" href="index.html">&larr; Inicio</a></div>
+  </header>
+  <div class="a-body">
+    <div class="a-intro">
+      <div class="eyebrow">Instrumento de evaluación | 5.º a 7.º de básica</div>
+      <h1 class="titulo">Baúl Semántico</h1>
+      <p class="sub">Evaluación de Memoria Semántica mediante Evocación Oral (EMSEO)</p>
+      <div class="facts">
+        <div><b>27</b><span>láminas</span></div>
+        <div><b>4</b><span>regiones</span></div>
+        <div><b>3</b><span>preguntas</span></div>
+        <div><b>162</b><span>puntos</span></div>
+      </div>
+      <div class="regions">
+        <div class="reg" style="--c:var(--costa)"><b>Costa</b><span>7 láminas</span></div>
+        <div class="reg" style="--c:var(--sierra)"><b>Sierra</b><span>7 láminas</span></div>
+        <div class="reg" style="--c:var(--amazonia)"><b>Amazonía</b><span>9 láminas</span></div>
+        <div class="reg" style="--c:var(--insular)"><b>Insular</b><span>4 láminas</span></div>
       </div>
     </div>
-    <div class="centro"><button class="btn" id="b-comenzar">Comenzar</button>
-      <p class="error-msg" id="err-inicio" role="alert"></p></div>
-    <p class="nota" id="nota-retomar" hidden></p>
+    <div class="card form">
+      <h2>Datos del estudiante</h2>
+      <div class="form-grid" id="muestra">
+        <div class="dato ancho"><label for="f-nombre">Estudiante</label><input id="f-nombre" autocomplete="off" aria-describedby="err-inicio"></div>
+        <div class="dato ancho"><label for="f-docente">Docente</label><input id="f-docente" autocomplete="off"></div>
+        <div class="dato tercio"><label for="f-grado">Grado</label><select id="f-grado"><option value="">Seleccione</option><option>5.º</option><option>6.º</option><option>7.º</option></select></div>
+        <div class="dato tercio"><label for="f-paralelo">Paralelo</label><select id="f-paralelo"><option value="">Seleccione</option><option>A</option><option>B</option><option>C</option></select></div>
+        <div class="dato tercio"><label for="f-edad">Edad</label><select id="f-edad"><option value="">Seleccione</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option></select></div>
+        <div class="dato"><label for="f-sexo">Sexo</label><select id="f-sexo"><option value="">Seleccione</option><option>Masculino</option><option>Femenino</option></select></div>
+        <div class="dato"><label for="f-lengua">Lengua materna</label>
+          <div class="con-otra"><select id="f-lengua"><option value="">Seleccione</option><option>Español</option><option>Kichwa</option><option value="otra">Otra</option></select>
+            <input id="f-lengua-otra" placeholder="¿Cuál?" aria-label="Otra lengua" hidden></div></div>
+        <div class="dato"><label for="f-origen">Origen de la familia</label>
+          <div class="con-otra"><select id="f-origen"><option value="">Seleccione</option><option>Costa</option><option>Sierra</option><option>Amazonía</option><option>Insular</option><option value="otra">Otro país</option></select>
+            <input id="f-origen-otra" placeholder="¿Cuál?" aria-label="Otro país" hidden></div></div>
+        <div class="dato"><label for="f-nee">Necesidades educativas especiales</label>
+          <div class="con-otra"><select id="f-nee"><option value="">Seleccione</option><option>No</option><option value="otra">Sí</option></select>
+            <input id="f-nee-otra" placeholder="¿Cuál? (opcional)" aria-label="Cuál necesidad especial" hidden></div></div>
+        <input id="f-fecha" type="hidden">
+      </div>
+      <div class="quien" id="quien">
+        <p>¿Quién escribe las respuestas?</p>
+        <div class="ops">
+          <button class="opcion" data-escribe="docente" aria-pressed="false"><b>El docente</b><small>El estudiante responde en voz alta</small></button>
+          <button class="opcion" data-escribe="estudiante" aria-pressed="false"><b>El estudiante</b><small>El estudiante escribe en la computadora</small></button>
+        </div>
+      </div>
+      <button class="btn btn-grande" id="b-comenzar">Comenzar evaluación <span class="arr">&rarr;</span></button>
+      <p class="error-msg" id="err-inicio" role="alert"></p>
+      <p class="nota nota-retomar" id="nota-retomar" hidden></p>
+    </div>
   </div>
 </section>
 
-<!-- 2. Instrucciones para el niño -->
+<!-- Bienvenida para el niño que escribe -->
 <section id="bienvenida" class="pantalla centrada">
-  <div class="tarjeta" style="max-width:720px">
-    <h1 style="font-size:38px">¡Hola, <span id="saludo"></span>!</h1>
-    <p style="font-size:22px">Vas a ver fotos de lugares, animales y cosas del Ecuador.</p>
-    <p style="font-size:22px">En cada foto vas a responder:</p>
-    <ol style="font-size:22px; line-height:1.6">
-      <li>¿Qué es esto?</li>
-      <li>¿A qué grupo pertenece?</li>
-      <li>Cuéntame, ¿qué sabes de esto?</li>
+  <div class="mensaje nino">
+    <h1>¡Hola, <span id="saludo"></span>!</h1>
+    <p>Vas a ver fotos de lugares, animales y cosas del Ecuador. En cada foto vas a responder:</p>
+    <ol class="preguntas-nino">
+      <li><span class="num">1</span>¿Qué es esto?</li>
+      <li><span class="num">2</span>¿A qué grupo pertenece?</li>
+      <li><span class="num">3</span>Cuéntame, ¿qué sabes de esto?</li>
     </ol>
-    <p style="font-size:22px">No importa la ortografía. Si no sabes, no pasa nada: pasa a la siguiente. <b>No hay respuestas malas.</b></p>
-    <div class="centro"><button class="btn" id="b-empezar" style="font-size:22px">¡Empezar!</button></div>
+    <p class="tranquilo">No importa la ortografía. Si no sabes, pasa a la siguiente. <b>No hay respuestas malas.</b></p>
+    <button class="btn" id="b-empezar">¡Empezar!</button>
     <p class="nota" id="carga-escrita" aria-live="polite"></p>
   </div>
 </section>
 
-<!-- 3. Portada de región -->
+<!-- Portada de región -->
 <section id="portada" class="pantalla">
-  <div class="banda" id="p-titulo">REGIÓN COSTA</div>
-  <img id="p-mapa" alt="Mapa del Ecuador con la región resaltada">
-  <button class="btn" id="b-portada" style="font-size:20px">Continuar</button>
+  <div class="bar"><div class="steps" id="p-steps"></div><div class="espacio"></div><span class="slot-sync"></span></div>
+  <div class="b-body">
+    <div class="b-side">
+      <div class="eyebrow" id="p-eyebrow">Región 1 de 4</div>
+      <h2 id="p-titulo">Costa</h2>
+      <div class="meta" id="p-meta"></div>
+      <button class="btn" id="b-portada">Empezar región <span class="arr">&rarr;</span></button>
+    </div>
+    <div class="b-map"><img id="p-mapa" alt="Mapa del Ecuador con la región resaltada"></div>
+  </div>
 </section>
 
-<!-- 4. Lámina: el estudiante escribe -->
+<!-- Lámina: escribe el estudiante (o el docente, con puntaje debajo de cada respuesta) -->
 <section id="lamina" class="pantalla">
-  <div class="lienzo">
-    <div class="marco"><img id="l-foto" alt="Foto de la lámina"><div class="pestana" id="l-num">1</div></div>
+  <div class="bar"><div class="tag"><i></i><span id="l-region"></span></div><div class="track" id="l-track"></div><div class="count" id="l-contador"></div><span class="slot-sync"></span></div>
+  <div class="l-body">
+    <div class="photo"><img id="l-foto" alt="Foto de la lámina"></div>
     <div class="respuestas">
-      <label for="r-a"><span class="num-preg">1.</span> ¿Qué es esto?</label>
-      <input id="r-a" autocomplete="off" spellcheck="false">
-      <div class="pts solo-docente" data-clave="a"></div>
-      <label for="r-b"><span class="num-preg">2.</span> ¿A qué grupo pertenece?</label>
-      <input id="r-b" autocomplete="off" spellcheck="false">
-      <div class="pts solo-docente" data-clave="b"></div>
-      <label><span class="num-preg">3.</span> Cuéntame, ¿qué sabes de esto? <span class="ayuda">(una, dos o tres cosas)</span></label>
-      <div class="tres">
-        <span>1.</span><input id="r-c1" autocomplete="off" spellcheck="false" aria-label="Primera cosa">
-        <span>2.</span><input id="r-c2" autocomplete="off" spellcheck="false" aria-label="Segunda cosa">
-        <span>3.</span><input id="r-c3" autocomplete="off" spellcheck="false" aria-label="Tercera cosa">
+      <div class="ans">
+        <label for="r-a"><span class="num">1</span>¿Qué es esto?</label>
+        <input id="r-a" autocomplete="off" spellcheck="false">
+        <div class="pts seg" data-clave="a"></div>
       </div>
-      <div class="pts solo-docente" data-clave="c"></div>
+      <div class="ans">
+        <label for="r-b"><span class="num">2</span>¿A qué grupo pertenece?</label>
+        <input id="r-b" autocomplete="off" spellcheck="false">
+        <div class="pts seg" data-clave="b"></div>
+      </div>
+      <div class="ans">
+        <label for="r-c1"><span class="num">3</span>Cuéntame, ¿qué sabes de esto?</label>
+        <div class="tres">
+          <span>1.</span><input id="r-c1" autocomplete="off" spellcheck="false" aria-label="Primera cosa">
+          <span>2.</span><input id="r-c2" autocomplete="off" spellcheck="false" aria-label="Segunda cosa">
+          <span>3.</span><input id="r-c3" autocomplete="off" spellcheck="false" aria-label="Tercera cosa">
+        </div>
+        <div class="pts seg" data-clave="c"></div>
+      </div>
+      <p class="falta" id="falta" aria-live="polite"></p>
       <div class="nav">
-        <button class="btn sec" id="b-ant">← Anterior</button>
-        <div class="progreso"><div id="barra"></div></div>
-        <span class="contador" id="contador">1 / 27</span>
-        <button class="btn" id="b-sig">Siguiente →</button>
+        <button class="btn sec" id="b-ant" aria-label="Anterior">&larr;<span class="l-largo">&nbsp;Anterior</span></button>
+        <button class="btn" id="b-sig">Siguiente <span class="arr">&rarr;</span></button>
       </div>
-      <p class="falta solo-docente" id="falta" aria-live="polite"></p>
     </div>
   </div>
 </section>
 
-<!-- 5. Fin del estudiante -->
+<!-- Fin del estudiante -->
 <section id="fin" class="pantalla centrada">
-  <div class="tarjeta" style="max-width:720px">
+  <div class="mensaje nino">
     <h1>¡Terminaste!</h1>
     <p>Gracias por tu esfuerzo y por todo lo que escribiste.</p>
     <p>Ahora avísale a tu profesor o profesora.</p>
-    <div class="centro">
-      <button class="btn sec solo-doc" id="b-docente">Solo para el docente: calificar</button>
-    </div>
+    <button class="btn sec solo-doc" id="b-docente">Solo para el docente: calificar</button>
   </div>
 </section>
 
-<!-- 5b. Evaluación terminada (escribe el docente: los resultados no se muestran frente al estudiante) -->
-<section id="terminado" class="pantalla">
-  <h1>Evaluación terminada</h1>
-  <p>¡Muchas gracias por participar!</p>
-  <button class="btn sec solo-doc" id="b-ver-resultados">Solo para el docente: ver resultados</button>
+<!-- Evaluación terminada (los resultados no se muestran frente al estudiante) -->
+<section id="terminado" class="pantalla centrada">
+  <div class="mensaje">
+    <h1>Evaluación terminada</h1>
+    <p>¡Muchas gracias por participar!</p>
+    <button class="btn sec solo-doc" id="b-ver-resultados">Solo para el docente: ver resultados</button>
+  </div>
 </section>
 
-<!-- 6. Calificación del docente -->
+<!-- Calificación del docente -->
 <section id="calificar" class="pantalla">
-  <div class="cal">
-    <div>
-      <div class="marco"><img id="c-foto" alt="Foto de la lámina"><div class="pestana" id="c-num">1</div></div>
-    </div>
-    <div>
-      <h2 id="c-titulo">1 | Garza</h2>
+  <div class="bar"><div class="tag"><i></i><span id="c-region"></span></div><div class="track" id="c-track"></div><div class="count" id="c-contador"></div><span class="slot-sync"></span></div>
+  <div class="c-body">
+    <div class="photo"><img id="c-foto" alt="Foto de la lámina"></div>
+    <div class="panel">
+      <h2 class="c-titulo" id="c-titulo"></h2>
       <div id="c-filas"></div>
-    </div>
-  </div>
-  <div class="barra-cal">
-    <div class="nav">
-      <button class="btn sec" id="c-ant">← Anterior</button>
-      <div class="progreso"><div id="c-barra"></div></div>
-      <span class="contador" id="c-contador">1 / 27</span>
-      <button class="btn" id="c-sig" disabled>Siguiente →</button>
+      <div class="nav">
+        <button class="btn sec" id="c-ant" aria-label="Anterior">&larr;<span class="l-largo">&nbsp;Anterior</span></button>
+        <button class="btn" id="c-sig" disabled>Siguiente <span class="arr">&rarr;</span></button>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- 7. Resultados -->
+<!-- Resultados -->
 <section id="resultados" class="pantalla">
-  <div class="tarjeta">
+  <header class="hdr">
     <img class="logo-ube" src="img/logo_ube.png" alt="Universidad Bolivariana del Ecuador">
-    <h1>Resultados EMSEO | Digital para escribir</h1>
-    <p class="sub" id="r-datos"></p>
-    <div class="grande">
-      <div><span>Puntaje sobre 100</span><strong id="r-100"></strong></div>
-      <div><span>Puntaje total (de 162)</span><strong id="r-total"></strong></div>
+    <div class="hdr-der"><span class="app-nombre">Digital para escribir</span><span class="slot-sync"></span></div>
+  </header>
+  <div class="e-body">
+    <aside class="card who">
+      <div class="eyebrow">Resultados</div>
+      <h2 id="r-nombre"></h2>
+      <div class="g" id="r-g"></div>
+      <dl class="dl" id="r-dl"></dl>
+      <div class="acciones">
+        <button class="btn" id="b-csv">Descargar resultados (Excel)</button>
+        <button class="btn sec" id="b-enviar" hidden>Confirmar envío</button>
+        <button class="btn sec" id="b-imprimir">Imprimir</button>
+        <button class="btn sec" id="b-recalificar">Revisar calificación</button>
+        <button class="btn sec" id="b-bitacora">Descargar historial de cambios</button>
+        <button class="btn btn-fin" id="b-nuevo">Siguiente estudiante <span class="arr">&rarr;</span></button>
+      </div>
+      <p class="nota" id="r-estado"></p>
+    </aside>
+    <div class="e-main">
+      <div class="card score">
+        <div>
+          <div class="eyebrow">Puntaje total</div>
+          <div class="big" id="r-total"></div>
+          <div class="idx"><span class="lvl" id="r-nivel"></span><span id="r-100"></span></div>
+        </div>
+        <div class="scale" id="r-escala"></div>
+      </div>
+      <div class="two">
+        <div class="card chart">
+          <h3>Por región</h3>
+          <p class="cap">Puntaje obtenido sobre el máximo de cada región</p>
+          <div id="r-regiones"></div>
+        </div>
+        <div class="card chart">
+          <h3>Por pregunta</h3>
+          <p class="cap">Suma de las 27 láminas, máximo 54 cada una</p>
+          <div id="r-preguntas"></div>
+          <div class="tabla-scroll"><table class="mx">
+            <thead><tr><th>Región</th><th>Evoc.</th><th>Categ.</th><th>Caract.</th><th>Total</th></tr></thead>
+            <tbody id="r-tabla"></tbody>
+          </table></div>
+        </div>
+      </div>
+      <details class="card">
+        <summary>Respuestas y puntaje de cada lámina</summary>
+        <div class="tabla-scroll"><table class="mx">
+          <thead><tr><th>Lámina</th><th>¿Qué es esto?</th><th>Grupo</th><th>Lo que sabe</th><th>Evoc.</th><th>Categ.</th><th>Caract.</th></tr></thead>
+          <tbody id="r-detalle"></tbody>
+        </table></div>
+      </details>
+      <details class="card registro">
+        <summary id="r-bit-titulo">Historial de cambios</summary>
+        <div class="tabla-scroll"><table class="mx bitacora">
+          <thead><tr><th>Hora</th><th>Acción</th><th>Lámina</th><th>Pregunta</th><th>Antes</th><th>Después</th></tr></thead>
+          <tbody id="r-bitacora"></tbody>
+        </table></div>
+      </details>
+      <div class="firma"><span>Firma del docente</span><span>Fecha</span></div>
     </div>
-    <div class="niveles" id="r-niveles"></div>
-    <p class="nivel-frase" id="r-nivel"></p>
-    <div class="tabla-scroll"><table>
-      <thead><tr><th>Región</th><th><span class="l-largo">Evocación</span><span class="l-corto">Evoc.</span></th><th><span class="l-largo">Categorización</span><span class="l-corto">Categ.</span></th><th><span class="l-largo">Caracterización</span><span class="l-corto">Caract.</span></th><th>Total</th></tr></thead>
-      <tbody id="r-tabla"></tbody>
-    </table></div>
-    <details>
-      <summary>Ver respuestas y puntaje de cada concepto</summary>
-      <div class="tabla-scroll"><table>
-        <thead><tr><th>N.º | Concepto</th><th>¿Qué es esto?</th><th>Grupo</th><th>Lo que sabe</th><th>Evoc.</th><th>Categ.</th><th>Caract.</th></tr></thead>
-        <tbody id="r-detalle"></tbody>
-      </table></div>
-    </details>
-    <details class="registro">
-      <summary id="r-bit-titulo">Historial de cambios</summary>
-      <div class="tabla-scroll"><table class="bitacora">
-        <thead><tr><th>Hora</th><th>Acción</th><th>Concepto</th><th>Pregunta</th><th>Antes</th><th>Después</th></tr></thead>
-        <tbody id="r-bitacora"></tbody>
-      </table></div>
-    </details>
-    <div class="firma"><span>Firma del docente</span><span>Fecha</span></div>
-    <div class="acciones">
-      <button class="btn" id="b-csv">Descargar resultados (Excel)</button>
-      <button class="btn sec" id="b-enviar" hidden>Confirmar envío</button>
-      <button class="btn sec" id="b-bitacora">Descargar historial de cambios</button>
-      <button class="btn sec" id="b-imprimir">Imprimir</button>
-      <button class="btn sec" id="b-recalificar">Revisar calificación</button>
-    </div>
-    <div class="acciones-fin"><button class="btn" id="b-nuevo">Siguiente estudiante →</button></div>
-    <p class="nota" id="r-estado"></p>
   </div>
 </section>
 
-<div class="sync" id="sync"></div>
+<span class="sync" id="sync" hidden></span>
 
 <script src="emseo_sync.js"></script>
 <script>
@@ -478,7 +248,7 @@ const REGIONES = [
     conceptos: ["Cóndor", "Curiquingue", "Totora", "Minga", "Chagra", "Páramo", "Laguna"] },
   { nombre: "Amazonía", color: "var(--amazonia)", mapa: "img_laminas/mapa_3.png",
     conceptos: ["Jaguar", "Tapir", "Guacamayo", "Armadillo", "Guayusa", "Achiote", "Canasto", "Cascada", "Bosque tropical"] },
-  { nombre: "Insular", titulo: "INSULAR | GALÁPAGOS", color: "var(--insular)", mapa: "img_laminas/mapa_4.png",
+  { nombre: "Insular", titulo: "INSULAR | GALÁPAGOS", extra: "Galápagos", color: "var(--insular)", mapa: "img_laminas/mapa_4.png",
     conceptos: ["Fragata", "Cactus", "Pesca artesanal", "Islote"] },
 ];
 const SECCIONES = [
@@ -529,6 +299,9 @@ function mostrar(id) {
   document.querySelectorAll(".pantalla").forEach(p => p.classList.toggle("activa", p.id === id));
   // el indicador técnico no se muestra en las pantallas que ve el estudiante cuando él escribe
   document.body.classList.toggle("vista-nino", (estado.escribe || "estudiante") === "estudiante" && PANTALLAS_NINO.includes(id));
+  const slot = document.querySelector(`#${id} .slot-sync`);  // el indicador de guardado va en la barra de cada pantalla
+  if (slot) slot.appendChild($("sync"));
+  $("sync").hidden = !slot;
   window.scrollTo(0, 0);
 }
 const foto = n => `img_laminas/${String(n).padStart(2, "0")}.jpg`;
@@ -541,11 +314,6 @@ function hoyISO() { const d = new Date(); return new Date(d.getTime() - d.getTim
 
 const textoFalta = nums => nums.length === 1 ? `Falta marcar la pregunta ${nums[0]}` : `Falta marcar las preguntas ${nums.slice(0, -1).join(", ")} y ${nums[nums.length - 1]}`;
 // ---------------------------------------------------------------- utilidades de diseño (revisión de 10 especialistas)
-const TEXTO_REGION = { "Costa": "#1a1a1a" };  // el dorado de la Costa necesita texto oscuro para leerse
-function ponerRegion(r) {
-  document.documentElement.style.setProperty("--region", r.color);
-  document.documentElement.style.setProperty("--region-texto", TEXTO_REGION[r.nombre] || "#fff");
-}
 function ponerFoto(img, src) {  // la foto queda oculta hasta que carga: nunca se ve la anterior con el número nuevo
   const marco = img.parentElement;
   const aviso = marco.querySelector(".aviso-foto");
@@ -675,11 +443,11 @@ function aplicarModo() {
 $("b-comenzar").onclick = () => {
   const nombre = $("f-nombre").value.trim();
   if (!nombre) {
-    $("f-nombre").focus(); $("f-nombre").style.borderBottomColor = "#9C2B2B"; $("f-nombre").setAttribute("aria-invalid", "true");
+    $("f-nombre").focus(); $("f-nombre").classList.add("falta-dato"); $("f-nombre").setAttribute("aria-invalid", "true");
     $("err-inicio").textContent = "Escriba el nombre del estudiante para comenzar.";
     return;
   }
-  $("f-nombre").removeAttribute("aria-invalid"); $("f-nombre").style.borderBottomColor = "";
+  $("f-nombre").removeAttribute("aria-invalid"); $("f-nombre").classList.remove("falta-dato");
   if (!quienEscribe) {
     $("quien").classList.add("error");
     $("err-inicio").textContent = "Elija quién escribe las respuestas: el docente o el estudiante.";
@@ -733,19 +501,10 @@ function irAPaso(i) {
     return mostrar("fin");
   }
   const paso = PASOS[estado.paso];
-  if (paso.tipo === "portada") {
-    const r = REGIONES[paso.region];
-    ponerRegion(r);
-    $("p-titulo").textContent = "REGIÓN " + (r.titulo || r.nombre.toUpperCase());
-    $("p-mapa").src = r.mapa;
-    return mostrar("portada");
-  }
+  if (paso.tipo === "portada") return mostrarPortada(paso.region);
   const n = paso.n, r = estado.resp[n - 1];
-  ponerRegion(REGIONES[CONCEPTOS[n - 1].region]);
   ponerFoto($("l-foto"), foto(n));
-  $("l-num").textContent = n;
-  $("contador").textContent = `${n} / ${CONCEPTOS.length}`;
-  $("barra").style.width = `${(n - 1) / CONCEPTOS.length * 100}%`;
+  barraLamina("l-", n, k => k < n);
   $("r-a").value = r.a; $("r-b").value = r.b; $("r-c1").value = r.c1; $("r-c2").value = r.c2; $("r-c3").value = r.c3;
   fotografiarCampos();
   $("b-ant").disabled = estado.paso === 0;
@@ -786,8 +545,7 @@ function registrarCampo(id) {
 function pintarPuntos(n) {
   const p = estado.puntos[n - 1], doc = estado.escribe === "docente";
   document.querySelectorAll(".pts").forEach(d => {
-    d.innerHTML = [0, 1, 2].map(v =>
-      `<button class="punto ${p[d.dataset.clave] === v ? "sel" : ""}" data-v="${v}">${v}</button>`).join("");
+    d.innerHTML = botonesPunto(d.dataset.clave, p[d.dataset.clave], NOMBRE_SECCION[d.dataset.clave]);
   });
   $("b-sig").disabled = doc && !completo(p);  // el docente debe marcar las tres antes de seguir
   const faltan = ["a", "b", "c"].map((k, i) => p[k] == null ? i + 1 : 0).filter(Boolean);
@@ -821,25 +579,20 @@ function irACalificar(i) {
   guardar();
   if (estado.cal >= CONCEPTOS.length) return mostrarResultados();
   const n = estado.cal + 1, c = CONCEPTOS[n - 1], r = estado.resp[n - 1];
-  ponerRegion(REGIONES[CONCEPTOS[n - 1].region]);
   ponerFoto($("c-foto"), foto(n));
-  $("c-num").textContent = n;
+  barraLamina("c-", n, k => completo(estado.puntos[k - 1]));
   $("c-titulo").textContent = `${n} | ${c.nombre}`;
-  $("c-contador").textContent = `${n} / ${CONCEPTOS.length}`;
-  $("c-barra").style.width = `${estado.puntos.filter(completo).length / CONCEPTOS.length * 100}%`;
   const cosas = tresCosas(r);
   const dijo = {
     a: r.a.trim(), b: r.b.trim(),
     c: cosas.length ? cosas.map((x, k) => `${k + 1}. ${esc(x)}`).join("<br>") : "",
   };
   const p = estado.puntos[n - 1];
-  $("c-filas").innerHTML = SECCIONES.map(s => `
-    <div class="fila">
-      <div class="cab"><b>${["a", "b", "c"].indexOf(s.clave) + 1}. ${s.pregunta}</b>
-        <div class="puntos">${[0, 1, 2].map(v =>
-          `<button class="punto ${p[s.clave] === v ? "sel" : ""}" data-clave="${s.clave}" data-v="${v}">${v}</button>`).join("")}</div>
-      </div>
-      <div class="dijo ${dijo[s.clave] ? "" : "vacio"}">${dijo[s.clave] ? (s.clave === "c" ? dijo.c : esc(dijo[s.clave])) : "(no escribió nada)"}</div>
+  $("c-filas").innerHTML = SECCIONES.map((s, i) => `
+    <div class="q ${p[s.clave] != null ? "done" : ""}">
+      <div class="q-top"><span class="q-text"><span class="num">${i + 1}</span>${s.pregunta}</span>${estadoPunto(p[s.clave])}</div>
+      <div class="dijo ${dijo[s.clave] ? "" : "vacio"}">${dijo[s.clave] ? (s.clave === "c" ? dijo.c : esc(dijo[s.clave])) : "No escribió nada"}</div>
+      <div class="seg">${botonesPunto(s.clave, p[s.clave], s.nombre)}</div>
     </div>`).join("");
   $("c-sig").disabled = !completo(p);
   $("c-ant").disabled = n === 1;
@@ -888,27 +641,80 @@ function payload() {
     })),
   };
 }
-function mostrarResultados() {
+
+// ---------------------------------------------------------------- diseño (propuesta 02 + mezcla de los jueces)
+const CLAVE_REG = ["costa", "sierra", "amazonia", "insular"];
+function ponerRegion(r) {
+  const k = CLAVE_REG[REGIONES.indexOf(r)];
+  document.documentElement.style.setProperty("--region", `var(--${k})`);
+  document.documentElement.style.setProperty("--region-ink", `var(--${k}-ink)`);
+}
+function pintarTrack(el, actual, hecho) {  // 27 tramos agrupados y coloreados por región
+  let k = 0;
+  el.innerHTML = REGIONES.map((r, ri) => `<span class="grp" style="--n:${r.conceptos.length};--c:var(--${CLAVE_REG[ri]})">` +
+    r.conceptos.map(() => { k++; return `<s class="${k === actual ? "now" : hecho(k) ? "done" : ""}"></s>`; }).join("") + "</span>").join("");
+}
+function barraLamina(prefijo, n, hecho) {
+  const c = CONCEPTOS[n - 1], r = REGIONES[c.region];
+  ponerRegion(r);
+  $(prefijo + "region").textContent = r.nombre;
+  pintarTrack($(prefijo + "track"), n, hecho);
+  $(prefijo + "contador").innerHTML = `${n} <span>de ${CONCEPTOS.length}</span>`;
+}
+function mostrarPortada(ri) {
+  const r = REGIONES[ri];
+  ponerRegion(r);
+  const primera = CONCEPTOS.findIndex(c => c.region === ri) + 1, ultima = primera + r.conceptos.length - 1;
+  $("p-eyebrow").textContent = `Región ${ri + 1} de ${REGIONES.length}`;
+  $("p-titulo").textContent = r.nombre;
+  $("p-meta").textContent = [r.extra, `${r.conceptos.length} láminas`, `Láminas ${primera} a ${ultima}`].filter(Boolean).join(" | ");
+  $("p-steps").innerHTML = REGIONES.map((x, i) =>
+    `<span class="${i === ri ? "on" : i < ri ? "ok" : ""}" style="--c:var(--${CLAVE_REG[i]})"><i></i>${x.nombre}</span>`).join("");
+  $("p-mapa").src = r.mapa;
+  mostrar("portada");
+}
+const botonesPunto = (clave, valor, nombre) => [0, 1, 2].map(v =>
+  `<button class="punto ${valor === v ? "sel" : ""}" data-clave="${clave}" data-v="${v}" aria-label="${nombre}: ${v}" aria-pressed="${valor === v}">${v}</button>`).join("");
+const estadoPunto = v => v == null ? `<span class="q-state">Sin marcar</span>` : `<span class="q-state ok">${v} ${v === 1 ? "punto" : "puntos"}</span>`;
+function fechaLarga(iso) { const [a, m, d] = String(iso || "").split("-"); return d ? `${d}/${m}/${a}` : ""; }
+function pintarInforme(extra) {  // cabecera, puntaje, escala, barras y tabla región × pregunta
   const d = estado.datos, { total, p100, nivel } = calcular();
-  $("r-datos").textContent = [d.nombre, d.edad && d.edad + " años", d.sexo, [d.grado, d.paralelo].filter(Boolean).join(" "), d.evaluador && "Docente: " + d.evaluador, d.fecha]
-    .filter(Boolean).join(" | ");
-  $("r-total").textContent = `${total} / ${MAX}`;
-  $("r-100").textContent = `${p100} / 100`;
-  $("r-niveles").innerHTML = NIVELES.map(x => `<div class="${x.nombre === nivel ? "es" : ""}"><b>${x.nombre}</b><br>${x.min}–${x.max}</div>`).join("");
-  $("r-nivel").innerHTML = `Nivel referencial: <b>${nivel}</b> (${p100} / 100). Orienta la lectura del docente; no es un diagnóstico.`;
-  const filas = REGIONES.map((r, ri) => {
-    const ps = estado.puntos.filter((_, i) => CONCEPTOS[i].region === ri);
-    const s = k => ps.reduce((t, p) => t + (p[k] || 0), 0), max = ps.length * 2;
-    const tot = s("a") + s("b") + s("c"), pct = Math.round(tot / (max * 3) * 100);
-    return `<tr><td>${r.nombre}</td><td>${s("a")} / ${max}</td><td>${s("b")} / ${max}</td><td>${s("c")} / ${max}</td>
-      <td>${tot} / ${max * 3} (${pct} %)<div class="barra-region"><i style="width:${pct}%;background:${r.color}"></i></div></td></tr>`;
-  });
-  const t = k => estado.puntos.reduce((s, p) => s + (p[k] || 0), 0);
-  filas.push(`<tr class="reg"><td>Total</td><td>${t("a")} / 54</td><td>${t("b")} / 54</td><td>${t("c")} / 54</td><td>${total} / 162</td></tr>`);
-  $("r-tabla").innerHTML = filas.join("");
+  $("r-nombre").textContent = d.nombre || "";
+  $("r-g").textContent = [[d.grado, d.paralelo].filter(Boolean).join(" "), d.edad && d.edad + " años"].filter(Boolean).join(" | ");
+  const filasDl = [["Docente", d.evaluador], ["Sexo", d.sexo], ["Lengua materna", d.lengua], ["Origen de la familia", d.region_origen],
+    ["Necesidades especiales", d.nee === "Sí" && d.nee_cual ? "Sí (" + d.nee_cual + ")" : d.nee], ...extra, ["Fecha", fechaLarga(d.fecha)]];
+  $("r-dl").innerHTML = filasDl.filter(x => x[1]).map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join("");
+  $("r-total").innerHTML = `${total}<small> / ${MAX}</small>`;
+  $("r-nivel").textContent = nivel;
+  $("r-100").textContent = `${p100} sobre 100`;
+  const iN = Math.max(0, NIVELES.findIndex(x => x.nombre === nivel)), N = NIVELES[iN];
+  const izq = (iN + (p100 - N.min) / (N.max - N.min + 1)) * 100 / NIVELES.length;
+  $("r-escala").innerHTML = `<span class="pin" style="left:${Math.min(97, Math.max(3, izq)).toFixed(1)}%">${p100}</span>
+    <div class="segs">${NIVELES.map((x, i) => `<i class="${i === iN ? "on" : ""}"></i>`).join("")}</div>
+    <div class="lbl">${NIVELES.map((x, i) => `<span class="${i === iN ? "on" : ""}"><b>${x.nombre}</b>${x.min}–${x.max}</span>`).join("")}</div>
+    <p class="referencial">Nivel referencial para orientar al docente; no es un diagnóstico.</p>`;
+  const barra = (nombre, v, max, c) => `<div class="row" style="--c:${c}"><div class="row-h"><b>${nombre}</b><span><em>${v}</em> / ${max}</span></div>` +
+    `<div class="bar-bg"><i style="width:${max ? (v / max * 100).toFixed(1) : 0}%"></i></div></div>`;
+  const sumaK = (ps, k) => ps.reduce((t, p) => t + (p[k] || 0), 0);
+  const sumaT = ps => ps.reduce((t, p) => t + sumaConcepto(p), 0);
+  const porRegion = REGIONES.map((r, ri) => estado.puntos.filter((_, i) => CONCEPTOS[i].region === ri));
+  $("r-regiones").innerHTML = REGIONES.map((r, ri) =>
+    barra(r.extra ? r.nombre + " | " + r.extra : r.nombre, sumaT(porRegion[ri]), porRegion[ri].length * 6, `var(--${CLAVE_REG[ri]})`)).join("");
+  $("r-preguntas").innerHTML = SECCIONES.map((s, i) => barra(s.nombre, sumaK(estado.puntos, s.clave), 54, ["#15202E", "#4A5568", "#7E8898"][i])).join("");
+  $("r-tabla").innerHTML = REGIONES.map((r, ri) => {
+    const ps = porRegion[ri], m = ps.length * 2;
+    return `<tr style="--c:var(--${CLAVE_REG[ri]})"><td><i></i>${r.nombre}</td>` +
+      SECCIONES.map(s => `<td>${sumaK(ps, s.clave)}<span> / ${m}</span></td>`).join("") + `<td>${sumaT(ps)}<span> / ${m * 3}</span></td></tr>`;
+  }).join("") + `<tr class="total"><td>Total</td>` + SECCIONES.map(s => `<td>${sumaK(estado.puntos, s.clave)}<span> / 54</span></td>`).join("") +
+    `<td>${total}<span> / ${MAX}</span></td></tr>`;
+  return { total, p100, nivel };
+}
+
+function mostrarResultados() {
+  const { total, p100, nivel } = pintarInforme([["Modalidad", estado.escribe === "docente" ? "Escribe el docente" : "Escribe el estudiante"]]);
   $("r-detalle").innerHTML = CONCEPTOS.map((c, i) => {
     const r = estado.resp[i], p = estado.puntos[i];
-    return `<tr><td>${c.n} | ${c.nombre}</td><td class="txt">${esc(r.a)}</td><td class="txt">${esc(r.b)}</td>
+    return `<tr style="--c:var(--${CLAVE_REG[c.region]})"><td><i></i>${c.n} | ${c.nombre}</td><td class="txt">${esc(r.a)}</td><td class="txt">${esc(r.b)}</td>
       <td class="txt">${tresCosas(r).map(esc).join("<br>")}</td><td>${p.a ?? "—"}</td><td>${p.b ?? "—"}</td><td>${p.c ?? "—"}</td></tr>`;
   }).join("");
   const resumen = `PT ${total}/162 | ${p100}/100 | ${nivel}`;
@@ -974,7 +780,7 @@ window.addEventListener("beforeprint", () => {  // al imprimir se abre el detall
   document.querySelectorAll("#resultados details:not(.registro)").forEach(d => { d.open = true; });
   document.title = `EMSEO_${(estado.datos.nombre || "estudiante").replace(/\s+/g, "_")}_${estado.datos.fecha || ""}`;
 });
-window.addEventListener("afterprint", () => { document.title = "EMSEO | Digital para escribir"; });
+window.addEventListener("afterprint", () => { document.title = "Baúl Semántico | Digital para escribir"; });
 $("b-recalificar").onclick = () => {
   LOG("Volvió a revisar la calificación");
   if (estado.escribe === "docente") irAPaso(1); else irACalificar(0);
