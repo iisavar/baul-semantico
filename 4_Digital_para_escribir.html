@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EMSEO · Versión escrita</title>
+<style>
+  :root {
+    --tinta: #1a1a1a;
+    --gris: #595959;
+    --gris-claro: #d9d9d9;
+    --panel: #f4f4f4;
+    --linea: #bfbfbf;
+    --costa: #C39A55;
+    --sierra: #8A6A4F;
+    --amazonia: #4E7A4A;
+    --insular: #3F7A8C;
+    --region: #4E7A4A;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: #fff; color: var(--tinta); font-family: "Times New Roman", Times, Georgia, serif; font-size: 17px; }
+  button, input { font-family: inherit; font-size: inherit; }
+  button { cursor: pointer; }
+  .pantalla { display: none; min-height: 100vh; }
+  .pantalla.activa { display: flex; }
+
+  /* ---------- comunes ---------- */
+  .centrada { flex-direction: column; align-items: center; justify-content: center; padding: 24px 16px; }
+  .tarjeta { width: 100%; max-width: 560px; }
+  .uni { text-align: center; color: var(--gris); margin: 0; }
+  h1 { text-align: center; font-size: 30px; margin: 8px 0 2px; }
+  .sub { text-align: center; color: var(--gris); margin: 0 0 28px; }
+  .campo { display: grid; grid-template-columns: 150px minmax(0, 1fr); align-items: end; gap: 10px; margin: 14px 0; }
+  .campo label { text-align: right; }
+  .campo input { min-width: 0; width: 100%; border: 0; border-bottom: 1px solid var(--gris); padding: 6px 2px; background: transparent; }
+  .campo input:focus { outline: none; border-bottom: 2px solid var(--tinta); }
+  .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; }
+  .dos .campo:last-child { grid-template-columns: auto minmax(0, 1fr); }
+  .btn { border: 1px solid var(--tinta); background: var(--tinta); color: #fff; padding: 10px 26px; border-radius: 4px; }
+  .btn.sec { background: #fff; color: var(--tinta); }
+  .btn:disabled { opacity: .35; cursor: not-allowed; }
+  .centro { text-align: center; margin-top: 28px; }
+  .nota { font-size: 14px; color: var(--gris); text-align: center; margin-top: 14px; }
+  .progreso { flex: 1; height: 6px; background: var(--gris-claro); border-radius: 3px; overflow: hidden; }
+  .progreso div { height: 100%; background: var(--region); width: 0; transition: width .2s; }
+  .contador { color: var(--gris); min-width: 70px; text-align: center; }
+  .nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+
+  /* ---------- portada de región ---------- */
+  #portada { flex-direction: column; align-items: center; padding: 22px 16px; height: 100vh; }
+  .banda { width: 100%; max-width: 1100px; background: var(--region); color: #fff; text-align: center; font-weight: bold;
+    font-size: clamp(20px, 3.4vw, 38px); letter-spacing: .22em; padding: 18px 10px; }
+  #portada img { flex: 1; min-height: 0; max-width: 100%; object-fit: contain; margin: 18px 0; }
+
+  /* ---------- foto (igual que docente.html) ---------- */
+  .marco { position: relative; aspect-ratio: 4 / 3; width: 100%; }
+  .marco img { width: 100%; height: 100%; object-fit: cover; display: block; border: 8px solid #fff; box-shadow: 0 1px 6px rgba(0, 0, 0, .18); }
+  .pestana { position: absolute; top: 0; right: 0; transform: translateY(-100%); background: var(--region); color: #fff;
+    font-weight: bold; font-size: 22px; min-width: 64px; text-align: center; padding: 6px 10px; }
+
+  /* ---------- lámina del estudiante ---------- */
+  #lamina, #ejemplo { background: var(--panel); height: 100vh; }
+  /* selector «¿quién escribe?» */
+  .quien { margin-top: 22px; }
+  .quien p { text-align: center; font-weight: bold; margin: 0 0 8px; }
+  .quien .ops { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .opcion { border: 1px solid var(--linea); background: #fff; border-radius: 6px; padding: 12px; text-align: left; line-height: 1.35; }
+  .opcion b { display: block; font-size: 18px; margin-bottom: 2px; }
+  .opcion small { color: var(--gris); font-size: 14px; }
+  .opcion.sel { border: 2px solid var(--tinta); background: #f7f7f7; }
+  .quien.error .opcion { border-color: #b00; }
+  @media (max-width: 640px) { .quien .ops { grid-template-columns: 1fr; } }
+  /* modo docente: botones 0-1-2 junto a cada respuesta */
+  .solo-docente { display: none; }
+  body[data-escribe="docente"] .solo-docente { display: flex; }
+  body[data-escribe="docente"] .solo-estudiante { display: none; }
+  .pts { gap: 8px; justify-content: flex-end; margin-top: 4px; }
+  .pts .punto { width: 48px; height: 38px; }
+  body[data-escribe="docente"] .respuestas label { font-size: 18px; margin-top: 8px; }
+  body[data-escribe="docente"] .respuestas input { font-size: 18px; padding: 7px 10px; }
+  .respuestas input:disabled { color: var(--tinta); background: #fafafa; }
+  .lienzo { flex: 1; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 28px;
+    padding: 56px 28px 20px; align-items: center; max-width: 1400px; margin: 0 auto; }
+  .respuestas { display: flex; flex-direction: column; gap: 6px; }
+  .respuestas label { font-size: 22px; font-weight: bold; margin-top: 12px; }
+  .respuestas input {
+    font-size: 22px; padding: 10px 12px; border: 1px solid var(--linea); border-radius: 4px; background: #fff; width: 100%;
+  }
+  .respuestas input:focus { outline: 2px solid var(--region); border-color: var(--region); }
+  .tres { display: grid; grid-template-columns: 28px 1fr; align-items: center; gap: 6px 8px; }
+  .tres span { font-size: 20px; color: var(--gris); text-align: right; }
+  .respuestas .nav { margin-top: 18px; }
+
+  /* ---------- fin del estudiante ---------- */
+  #fin h1 { font-size: 40px; }
+  #fin p { font-size: 22px; text-align: center; }
+
+  /* ---------- calificación (docente) ---------- */
+  #calificar { background: var(--panel); flex-direction: column; }
+  .cal { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.3fr); gap: 24px; padding: 48px 24px 12px;
+    max-width: 1400px; width: 100%; margin: 0 auto; flex: 1; align-items: start; }
+  .cal h2 { margin: 0 0 8px; font-size: 22px; }
+  .fila { background: #fff; border: 1px solid var(--linea); padding: 10px 12px; margin-bottom: 10px; }
+  .fila .cab { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .fila .cab b { font-size: 18px; }
+  .fila .dijo { font-size: 20px; margin: 6px 0; min-height: 26px; }
+  .fila .dijo.vacio { color: #a00; font-size: 16px; }
+  .puntos { display: flex; gap: 8px; }
+  .punto { width: 52px; height: 40px; border: 1px solid var(--gris); background: #fff; border-radius: 4px; font-size: 20px; }
+  .punto.sel { background: var(--tinta); color: #fff; border-color: var(--tinta); }
+  .barra-cal { padding: 10px 24px 14px; border-top: 1px solid var(--linea); background: var(--panel); }
+  .barra-cal .nav { max-width: 1400px; margin: 0 auto; }
+
+  /* ---------- resultados ---------- */
+  #resultados { flex-direction: column; align-items: center; padding: 24px 16px; }
+  #resultados .tarjeta { max-width: 860px; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+  th, td { border: 1px solid var(--linea); padding: 6px 8px; text-align: center; vertical-align: top; }
+  th { background: #e4e4e4; }
+  td:first-child, th:first-child { text-align: left; }
+  td.txt { text-align: left; font-size: 15px; }
+  tr.reg td { background: #f2f2f2; font-weight: bold; }
+  .grande { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0; }
+  .grande div { border: 1px solid var(--linea); padding: 12px 16px; }
+  .grande span { display: block; color: var(--gris); font-size: 14px; }
+  .grande strong { font-size: 30px; }
+  .niveles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .niveles div { border: 1px solid var(--linea); padding: 8px 4px; text-align: center; font-size: 14px; }
+  .niveles div.es { background: var(--tinta); color: #fff; border-color: var(--tinta); }
+  .acciones { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 20px; }
+  details { margin-top: 18px; }
+  summary { cursor: pointer; color: var(--gris); }
+
+  @media (max-width: 860px) {
+    .lienzo, .cal { grid-template-columns: 1fr; padding-top: 52px; }
+    #lamina { height: auto; }
+    .campo { grid-template-columns: 1fr; }
+    .campo label { text-align: left; }
+    .dos { grid-template-columns: 1fr; }
+    .grande, .niveles { grid-template-columns: 1fr; }
+  }
+  .sync { position: fixed; left: 10px; bottom: 8px; font-size: 12px; color: var(--gris); background: rgba(255,255,255,.9);
+    border: 1px solid var(--linea); border-radius: 12px; padding: 2px 10px; z-index: 5; }
+  .sync[data-tipo="ok"] { color: #2E6B1F; }
+  .sync[data-tipo="pendiente"] { color: #7A6200; }
+  .bitacora td { font-size: 13px; text-align: left; }
+  .bitacora td:first-child { white-space: nowrap; }
+  @media print { .acciones, summary, .sync { display: none; } details { display: block; } }
+</style>
+</head>
+<body>
+
+<!-- 1. Datos (los llena el docente) -->
+<section id="inicio" class="pantalla centrada activa">
+  <div class="tarjeta">
+    <p class="uni">Universidad Bolivariana del Ecuador</p>
+    <h1>EMSEO · Versión escrita</h1>
+    <p class="sub">Las respuestas quedan escritas y se califican con 0, 1 o 2</p>
+    <div class="campo"><label for="f-nombre">Estudiante:</label><input id="f-nombre" autocomplete="off"></div>
+    <div class="dos">
+      <div class="campo"><label for="f-grado">Grado:</label><input id="f-grado" autocomplete="off"></div>
+      <div class="campo"><label for="f-paralelo">Paralelo:</label><input id="f-paralelo" autocomplete="off"></div>
+    </div>
+    <div class="campo"><label for="f-docente">Docente:</label><input id="f-docente" autocomplete="off"></div>
+    <div class="campo"><label for="f-fecha">Fecha:</label><input id="f-fecha" type="date"></div>
+    <div class="quien" id="quien">
+      <p>¿Quién escribe las respuestas?</p>
+      <div class="ops">
+        <button class="opcion" data-escribe="docente"><b>✍️ El docente</b>
+          <small>El estudiante responde en voz alta; el docente escribe lo que dijo y marca 0, 1 o 2 en el momento.</small></button>
+        <button class="opcion" data-escribe="estudiante"><b>🧒 El estudiante</b>
+          <small>El estudiante escribe sus respuestas en la compu; el docente califica al final.</small></button>
+      </div>
+    </div>
+    <div class="centro"><button class="btn" id="b-comenzar">Comenzar</button></div>
+    <p class="nota" id="nota-retomar" hidden></p>
+  </div>
+</section>
+
+<!-- 2. Instrucciones para el niño -->
+<section id="bienvenida" class="pantalla centrada">
+  <div class="tarjeta" style="max-width:720px">
+    <h1 style="font-size:38px">¡Hola, <span id="saludo"></span>!</h1>
+    <p style="font-size:22px">Vas a ver fotos de lugares, animales y cosas del Ecuador.</p>
+    <p style="font-size:22px">En cada foto escribe:</p>
+    <ul style="font-size:22px; line-height:1.6">
+      <li>qué es,</li>
+      <li>a qué grupo pertenece,</li>
+      <li>y tres cosas que sepas de ella.</li>
+    </ul>
+    <p style="font-size:22px">Si no sabes, no pasa nada: pasa a la siguiente. <b>No hay respuestas malas.</b></p>
+    <div class="centro"><button class="btn" id="b-empezar" style="font-size:22px">¡Empezar!</button></div>
+  </div>
+</section>
+
+<!-- 2b. Ejemplo resuelto para el niño -->
+<section id="ejemplo" class="pantalla">
+  <div class="lienzo">
+    <div class="marco"><img src="img_laminas/ejemplo.jpg" alt="Ejemplo"><div class="pestana" style="background:#595959">Ejemplo</div></div>
+    <div class="respuestas">
+      <p style="font-size:22px;margin:0 0 4px" id="ej-titulo"><b>Mira este ejemplo.</b> Así se responde:</p>
+      <label>¿Qué es?</label>
+      <input value="un perro" disabled>
+      <label>¿A qué grupo pertenece?</label>
+      <input value="es un animal" disabled>
+      <label>Escribe tres cosas que sepas de esto:</label>
+      <div class="tres">
+        <span>1.</span><input value="ladra" disabled>
+        <span>2.</span><input value="tiene cuatro patas" disabled>
+        <span>3.</span><input value="cuida la casa" disabled>
+      </div>
+      <div class="nav"><span></span><button class="btn" id="b-ejemplo" style="font-size:20px">¡Ahora tú! →</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. Portada de región -->
+<section id="portada" class="pantalla">
+  <div class="banda" id="p-titulo">REGIÓN COSTA</div>
+  <img id="p-mapa" alt="Mapa del Ecuador con la región resaltada">
+  <button class="btn" id="b-portada" style="font-size:20px">Continuar</button>
+</section>
+
+<!-- 4. Lámina: el estudiante escribe -->
+<section id="lamina" class="pantalla">
+  <div class="lienzo">
+    <div class="marco"><img id="l-foto" alt="Foto"><div class="pestana" id="l-num">1</div></div>
+    <div class="respuestas">
+      <label for="r-a"><span class="solo-estudiante">¿Qué es?</span><span class="solo-docente">Evocación · ¿Qué es esto?</span></label>
+      <input id="r-a" autocomplete="off" spellcheck="false">
+      <div class="pts solo-docente" data-clave="a"></div>
+      <label for="r-b"><span class="solo-estudiante">¿A qué grupo pertenece?</span><span class="solo-docente">Categorización · ¿A qué grupo pertenece?</span></label>
+      <input id="r-b" autocomplete="off" spellcheck="false">
+      <div class="pts solo-docente" data-clave="b"></div>
+      <label><span class="solo-estudiante">Escribe tres cosas que sepas de esto:</span><span class="solo-docente">Caracterización · Cuéntame, ¿qué sabes de esto?</span></label>
+      <div class="tres">
+        <span>1.</span><input id="r-c1" autocomplete="off" spellcheck="false" aria-label="Primera cosa">
+        <span>2.</span><input id="r-c2" autocomplete="off" spellcheck="false" aria-label="Segunda cosa">
+        <span>3.</span><input id="r-c3" autocomplete="off" spellcheck="false" aria-label="Tercera cosa">
+      </div>
+      <div class="pts solo-docente" data-clave="c"></div>
+      <div class="nav">
+        <button class="btn sec" id="b-ant">← Atrás</button>
+        <div class="progreso"><div id="barra"></div></div>
+        <span class="contador" id="contador">1 / 27</span>
+        <button class="btn" id="b-sig">Siguiente →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. Fin del estudiante -->
+<section id="fin" class="pantalla centrada">
+  <div class="tarjeta" style="max-width:720px">
+    <h1>¡Terminaste! 🎉</h1>
+    <p>Muy bien, gracias por tu esfuerzo.</p>
+    <p>Ahora avísale a tu profesor o profesora.</p>
+    <div class="centro">
+      <button class="btn sec" id="b-volver">← Revisar mis respuestas</button>
+      <button class="btn" id="b-docente">Soy el docente: calificar</button>
+    </div>
+  </div>
+</section>
+
+<!-- 6. Calificación del docente -->
+<section id="calificar" class="pantalla">
+  <div class="cal">
+    <div>
+      <div class="marco"><img id="c-foto" alt="Foto"><div class="pestana" id="c-num">1</div></div>
+    </div>
+    <div>
+      <h2 id="c-titulo">1 · Garza</h2>
+      <div id="c-filas"></div>
+    </div>
+  </div>
+  <div class="barra-cal">
+    <div class="nav">
+      <button class="btn sec" id="c-ant">← Anterior</button>
+      <div class="progreso"><div id="c-barra"></div></div>
+      <span class="contador" id="c-contador">1 / 27</span>
+      <button class="btn" id="c-sig" disabled>Siguiente →</button>
+    </div>
+  </div>
+</section>
+
+<!-- 7. Resultados -->
+<section id="resultados" class="pantalla">
+  <div class="tarjeta">
+    <p class="uni">Universidad Bolivariana del Ecuador</p>
+    <h1>Resultados EMSEO · versión escrita</h1>
+    <p class="sub" id="r-datos"></p>
+    <div class="grande">
+      <div><span>Puntaje total (PT)</span><strong id="r-total"></strong></div>
+      <div><span>Puntaje sobre 100 (P₁₀₀ = PT ÷ 162 × 100)</span><strong id="r-100"></strong></div>
+    </div>
+    <div class="niveles" id="r-niveles"></div>
+    <table>
+      <thead><tr><th>Región</th><th>Evocación</th><th>Categorización</th><th>Caracterización</th><th>Total</th></tr></thead>
+      <tbody id="r-tabla"></tbody>
+    </table>
+    <details>
+      <summary>Ver respuestas y puntaje de cada concepto</summary>
+      <table>
+        <thead><tr><th>N.º · Concepto</th><th>¿Qué es?</th><th>Grupo</th><th>Tres cosas</th><th>E</th><th>C</th><th>Ca</th></tr></thead>
+        <tbody id="r-detalle"></tbody>
+      </table>
+    </details>
+    <details>
+      <summary id="r-bit-titulo">Registro de cambios</summary>
+      <table class="bitacora">
+        <thead><tr><th>Hora</th><th>Acción</th><th>Concepto</th><th>Pregunta</th><th>Antes</th><th>Después</th></tr></thead>
+        <tbody id="r-bitacora"></tbody>
+      </table>
+    </details>
+    <div class="acciones">
+      <button class="btn" id="b-enviar">Enviar a la hoja de Google</button>
+      <button class="btn sec" id="b-csv">Descargar CSV</button>
+      <button class="btn sec" id="b-bitacora">Descargar registro de cambios</button>
+      <button class="btn sec" id="b-imprimir">Imprimir</button>
+      <button class="btn sec" id="b-recalificar">Revisar calificación</button>
+      <button class="btn sec" id="b-nuevo">Nuevo estudiante</button>
+    </div>
+    <p class="nota" id="r-estado"></p>
+  </div>
+</section>
+
+<div class="sync" id="sync"></div>
+
+<script src="emseo_sync.js"></script>
+<script>
+// ---------------------------------------------------------------- configuración
+// URL del Apps Script (ver apps_script.gs). Vacía = no se envía nada.
+const SHEET_URL = "";
+
+const REGIONES = [
+  { nombre: "Costa", color: "var(--costa)", mapa: "img_laminas/mapa_1.png",
+    conceptos: ["Garza", "Ceibo", "Guayacán", "Paja toquilla", "Marimba", "Estero", "Bosque seco"] },
+  { nombre: "Sierra", color: "var(--sierra)", mapa: "img_laminas/mapa_2.png",
+    conceptos: ["Cóndor", "Curiquingue", "Totora", "Minga", "Chagra", "Páramo", "Laguna"] },
+  { nombre: "Amazonía", color: "var(--amazonia)", mapa: "img_laminas/mapa_3.png",
+    conceptos: ["Jaguar", "Tapir", "Guacamayo", "Armadillo", "Guayusa", "Achiote", "Canasto", "Cascada", "Bosque tropical"] },
+  { nombre: "Insular", titulo: "INSULAR · GALÁPAGOS", color: "var(--insular)", mapa: "img_laminas/mapa_4.png",
+    conceptos: ["Fragata", "Cactus", "Pesca artesanal", "Islote"] },
+];
+const SECCIONES = [
+  { clave: "a", nombre: "Evocación", pregunta: "¿Qué es?" },
+  { clave: "b", nombre: "Categorización", pregunta: "¿A qué grupo pertenece?" },
+  { clave: "c", nombre: "Caracterización", pregunta: "¿Qué sabes de esto?" },
+];
+const NIVELES = [
+  { nombre: "Requiere apoyo", min: 0, max: 49 }, { nombre: "Promedio bajo", min: 50, max: 69 },
+  { nombre: "Promedio", min: 70, max: 79 }, { nombre: "Promedio alto", min: 80, max: 89 },
+  { nombre: "Superior", min: 90, max: 100 },
+];
+const MAX = 162;
+const CLAVE_GUARDADO = "emseo-escrita-en-curso";
+
+const CONCEPTOS = [];
+const PASOS = [];  // recorrido del estudiante: portadas + láminas
+REGIONES.forEach((r, ri) => {
+  PASOS.push({ tipo: "portada", region: ri });
+  r.conceptos.forEach(nombre => {
+    const n = CONCEPTOS.length + 1;
+    CONCEPTOS.push({ n, nombre, region: ri });
+    PASOS.push({ tipo: "lamina", n });
+  });
+});
+
+// ---------------------------------------------------------------- estado
+let estado = nuevoEstado();
+function nuevoId() {  // declaración de función: está disponible antes de «let estado = …»
+  return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now() + "-" + Math.random().toString(36).slice(2);
+}
+function nuevoEstado() {
+  return {
+    id: nuevoId(), datos: {}, escribe: "estudiante", fase: "estudiante", paso: 0, cal: 0,
+    resp: CONCEPTOS.map(() => ({ a: "", b: "", c1: "", c2: "", c3: "" })),
+    puntos: CONCEPTOS.map(() => ({ a: null, b: null, c: null })),
+  };
+}
+function guardar() { try { localStorage.setItem(CLAVE_GUARDADO, JSON.stringify(estado)); } catch (e) { /* sin almacenamiento */ } }
+function cargar() { try { const s = localStorage.getItem(CLAVE_GUARDADO); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
+function borrarGuardado() { try { localStorage.removeItem(CLAVE_GUARDADO); } catch (e) { /* nada */ } }
+
+const $ = id => document.getElementById(id);
+const iniciales = n => String(n || "").split(/\s+/).filter(Boolean).map(x => x[0].toUpperCase() + ".").join(" ");
+const esc = t => String(t ?? "").replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+function mostrar(id) { document.querySelectorAll(".pantalla").forEach(p => p.classList.toggle("activa", p.id === id)); window.scrollTo(0, 0); }
+const foto = n => `img_laminas/${String(n).padStart(2, "0")}.jpg`;
+const colorDe = n => REGIONES[CONCEPTOS[n - 1].region].color;
+const completo = p => p.a != null && p.b != null && p.c != null;
+const sumaConcepto = p => (p.a || 0) + (p.b || 0) + (p.c || 0);
+const tresCosas = r => [r.c1, r.c2, r.c3].map(x => x.trim()).filter(Boolean);
+function hoyISO() { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
+
+// ---------------------------------------------------------------- registro y envío en vivo
+const sync = crearSync({ url: SHEET_URL, estado: () => estado, guardar, foto: payload, indicador: "sync" });
+const LOG = (accion, info) => sync.registrar(accion, info);
+const NOMBRE_SECCION = { a: "Evocación", b: "Categorización", c: "Caracterización" };
+const CAMPO = { "r-a": ["a", "Evocación"], "r-b": ["b", "Categorización"], "r-c1": ["c1", "Caracterización (1)"],
+                "r-c2": ["c2", "Caracterización (2)"], "r-c3": ["c3", "Caracterización (3)"] };
+const infoC = (n, pregunta) => ({ n, concepto: CONCEPTOS[n - 1].nombre, pregunta: pregunta || "" });
+const quien = () => estado.escribe === "docente" ? "escribió el docente" : "escribió el estudiante";
+function archivar() {  // copia local de cada evaluación cerrada (no se pierde nada en esta compu)
+  try {
+    const a = JSON.parse(localStorage.getItem("emseo-archivo-escrita") || "[]");
+    a.push(estado);
+    localStorage.setItem("emseo-archivo-escrita", JSON.stringify(a.slice(-300)));
+  } catch (e) { /* sin almacenamiento */ }
+}
+function cerrarCampo() {  // registra lo escrito en el casillero activo antes de cambiar de lámina
+  guardarRespuestas();
+  Object.keys(CAMPO).forEach(registrarCampo);
+}
+
+// ---------------------------------------------------------------- inicio
+$("f-fecha").value = hoyISO();
+const previo = cargar();
+if (previo && previo.datos && previo.datos.nombre) {
+  $("nota-retomar").hidden = false;
+  $("nota-retomar").innerHTML = `Hay una evaluación sin terminar (${esc(iniciales(previo.datos.nombre))}). ` +
+    `<button class="btn sec" id="b-retomar">Retomar</button>`;
+  $("b-retomar").onclick = () => {
+    estado = previo;
+    aplicarModo();
+    LOG("Retomó la evaluación");
+    if (estado.fase === "docente") irACalificar(estado.cal); else irAPaso(estado.paso);
+  };
+}
+let quienEscribe = null;
+document.querySelectorAll(".opcion").forEach(b => b.onclick = () => {
+  quienEscribe = b.dataset.escribe;
+  document.querySelectorAll(".opcion").forEach(x => x.classList.toggle("sel", x === b));
+  $("quien").classList.remove("error");
+});
+function aplicarModo() {
+  document.body.dataset.escribe = estado.escribe || "estudiante";
+  const doc = estado.escribe === "docente";
+  $("ej-titulo").innerHTML = doc
+    ? "<b>Ejemplo de práctica · no se califica.</b> Muestre la foto y haga las tres preguntas:"
+    : "<b>Mira este ejemplo.</b> Así se responde:";
+  $("b-ejemplo").textContent = doc ? "Empezar la evaluación →" : "¡Ahora tú! →";
+}
+$("b-comenzar").onclick = () => {
+  const nombre = $("f-nombre").value.trim();
+  if (!nombre) { $("f-nombre").focus(); $("f-nombre").style.borderBottomColor = "#b00"; return; }
+  if (!quienEscribe) { $("quien").classList.add("error"); return; }
+  const pendiente = cargar();
+  if (pendiente && pendiente.datos && pendiente.datos.nombre && !pendiente.enviado && !pendiente.csv &&
+      !confirm("Hay una evaluación guardada (" + iniciales(pendiente.datos.nombre) + ") que no se descargó ni envió. " +
+               "Si comienza, se reemplaza. ¿Continuar?")) return;
+  estado = nuevoEstado();
+  estado.escribe = quienEscribe;
+  estado.datos = { nombre, grado: $("f-grado").value.trim(), paralelo: $("f-paralelo").value.trim(),
+    evaluador: $("f-docente").value.trim(), fecha: $("f-fecha").value || hoyISO() };
+  guardar();
+  aplicarModo();
+  LOG("Inicio de la evaluación", { detalle: (estado.escribe === "docente" ? "Escribe el docente" : "Escribe el estudiante") +
+    " · " + [estado.datos.grado, estado.datos.paralelo].filter(Boolean).join(" ") });
+  $("saludo").textContent = nombre.split(" ")[0];
+  mostrar(estado.escribe === "docente" ? "ejemplo" : "bienvenida");  // el saludo es para el niño que escribe
+};
+$("b-empezar").onclick = () => mostrar("ejemplo");
+$("b-ejemplo").onclick = () => { LOG("Vio el ejemplo de práctica"); irAPaso(0); };
+
+// ---------------------------------------------------------------- recorrido del estudiante
+function irAPaso(i) {
+  estado.fase = "estudiante";
+  const desde = PASOS[estado.paso], destino = Math.max(0, Math.min(i, PASOS.length));
+  if (destino !== estado.paso && desde && desde.tipo === "lamina" && $("lamina").classList.contains("activa")) {
+    guardarRespuestas();
+    Object.keys(CAMPO).forEach(registrarCampo);
+    const r = estado.resp[desde.n - 1], p = estado.puntos[desde.n - 1];
+    if (!r.a.trim()) LOG("Dejó sin responder", infoC(desde.n, "Evocación"));
+    if (!r.b.trim()) LOG("Dejó sin responder", infoC(desde.n, "Categorización"));
+    if (!tresCosas(r).length) LOG("Dejó sin responder", infoC(desde.n, "Caracterización"));
+    if (estado.escribe === "docente") ["a", "b", "c"].filter(k => p[k] == null)
+      .forEach(k => LOG("Dejó sin marcar", infoC(desde.n, NOMBRE_SECCION[k])));
+  }
+  if (destino < estado.paso && PASOS[destino] && PASOS[destino].tipo === "lamina") {
+    LOG("Volvió a una lámina anterior", infoC(PASOS[destino].n));
+  }
+  estado.paso = destino;
+  guardar();
+  // escribe el docente: ya calificó en cada lámina, va directo a resultados
+  if (estado.paso >= PASOS.length) {
+    if (estado.escribe === "docente") return mostrarResultados();
+    if (!estado.finEstudiante) { estado.finEstudiante = true; LOG("El estudiante terminó de escribir"); }
+    return mostrar("fin");
+  }
+  const paso = PASOS[estado.paso];
+  if (paso.tipo === "portada") {
+    const r = REGIONES[paso.region];
+    document.documentElement.style.setProperty("--region", r.color);
+    $("p-titulo").textContent = "REGIÓN " + (r.titulo || r.nombre.toUpperCase());
+    $("p-mapa").src = r.mapa;
+    return mostrar("portada");
+  }
+  const n = paso.n, r = estado.resp[n - 1];
+  document.documentElement.style.setProperty("--region", colorDe(n));
+  $("l-foto").src = foto(n);
+  $("l-num").textContent = n;
+  $("contador").textContent = `${n} / ${CONCEPTOS.length}`;
+  $("barra").style.width = `${(n - 1) / CONCEPTOS.length * 100}%`;
+  $("r-a").value = r.a; $("r-b").value = r.b; $("r-c1").value = r.c1; $("r-c2").value = r.c2; $("r-c3").value = r.c3;
+  fotografiarCampos();
+  $("b-ant").disabled = estado.paso === 0;
+  pintarPuntos(n);
+  mostrar("lamina");
+  setTimeout(() => $("r-a").focus(), 50);
+}
+function guardarRespuestas() {
+  const paso = PASOS[estado.paso];
+  if (!paso || paso.tipo !== "lamina") return;
+  const r = estado.resp[paso.n - 1];
+  r.a = $("r-a").value; r.b = $("r-b").value; r.c1 = $("r-c1").value; r.c2 = $("r-c2").value; r.c3 = $("r-c3").value;
+  guardar();
+}
+// Trazabilidad de textos: al entrar a la lámina se guarda cómo estaba cada casillero; al salir de un casillero
+// (o de la lámina) se compara y se registra cualquier diferencia: escribió, cambió o borró.
+const alEntrar = {};
+function fotografiarCampos() { Object.keys(CAMPO).forEach(id => { alEntrar[id] = $(id).value; }); }
+function registrarCampo(id) {
+  const paso = PASOS[estado.paso];
+  if (!paso || paso.tipo !== "lamina" || !$("lamina").classList.contains("activa")) return;
+  const antes = (alEntrar[id] || "").trim(), despues = $(id).value.trim();
+  alEntrar[id] = $(id).value;
+  if (antes === despues) return;
+  const accion = !antes ? "Escribió respuesta" : !despues ? "Borró respuesta" : "Cambió respuesta";
+  LOG(accion, { ...infoC(paso.n, CAMPO[id][1]), antes, despues, detalle: quien() });
+}
+["r-a", "r-b", "r-c1", "r-c2", "r-c3"].forEach((id, i, ids) => {
+  $(id).addEventListener("input", guardarRespuestas);
+  $(id).addEventListener("blur", () => registrarCampo(id));
+  // Enter pasa al siguiente casillero; en el último, a la siguiente foto
+  $(id).addEventListener("keydown", e => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    if (i < ids.length - 1) $(ids[i + 1]).focus(); else { cerrarCampo(); $("b-sig").click(); }
+  });
+});
+function pintarPuntos(n) {
+  const p = estado.puntos[n - 1], doc = estado.escribe === "docente";
+  document.querySelectorAll(".pts").forEach(d => {
+    d.innerHTML = [0, 1, 2].map(v =>
+      `<button class="punto ${p[d.dataset.clave] === v ? "sel" : ""}" data-v="${v}">${v}</button>`).join("");
+  });
+  $("b-sig").disabled = doc && !completo(p);  // el docente debe marcar las tres antes de seguir
+}
+document.querySelectorAll(".pts").forEach(d => d.addEventListener("click", e => {
+  const b = e.target.closest(".punto");
+  const paso = PASOS[estado.paso];
+  if (!b || !paso || paso.tipo !== "lamina") return;
+  const clave = d.dataset.clave, v = Number(b.dataset.v), antes = estado.puntos[paso.n - 1][clave];
+  if (antes === v) return;
+  estado.puntos[paso.n - 1][clave] = v;
+  LOG(antes == null ? "Marcó puntaje" : "Cambió puntaje", { ...infoC(paso.n, NOMBRE_SECCION[clave]), antes, despues: v });
+  guardarRespuestas();
+  pintarPuntos(paso.n);
+}));
+$("b-portada").onclick = () => irAPaso(estado.paso + 1);
+$("b-sig").onclick = () => { cerrarCampo(); guardarRespuestas(); irAPaso(estado.paso + 1); };
+$("b-ant").onclick = () => { cerrarCampo(); guardarRespuestas(); irAPaso(estado.paso - 1); };
+$("b-volver").onclick = () => { LOG("El estudiante volvió a revisar sus respuestas"); irAPaso(PASOS.length - 1); };
+$("b-docente").onclick = () => {
+  if (!confirm("Esta parte es solo para el docente. ¿Continuar a la calificación?")) return;
+  LOG("El docente empezó a calificar");
+  irACalificar(0);
+};
+
+// ---------------------------------------------------------------- calificación del docente
+function irACalificar(i) {
+  estado.fase = "docente";
+  estado.cal = Math.max(0, Math.min(i, CONCEPTOS.length));
+  guardar();
+  if (estado.cal >= CONCEPTOS.length) return mostrarResultados();
+  const n = estado.cal + 1, c = CONCEPTOS[n - 1], r = estado.resp[n - 1];
+  document.documentElement.style.setProperty("--region", colorDe(n));
+  $("c-foto").src = foto(n);
+  $("c-num").textContent = n;
+  $("c-titulo").textContent = `${n} · ${c.nombre}`;
+  $("c-contador").textContent = `${n} / ${CONCEPTOS.length}`;
+  $("c-barra").style.width = `${estado.puntos.filter(completo).length / CONCEPTOS.length * 100}%`;
+  const cosas = tresCosas(r);
+  const dijo = {
+    a: r.a.trim(), b: r.b.trim(),
+    c: cosas.length ? cosas.map((x, k) => `${k + 1}. ${esc(x)}`).join("<br>") : "",
+  };
+  const p = estado.puntos[n - 1];
+  $("c-filas").innerHTML = SECCIONES.map(s => `
+    <div class="fila">
+      <div class="cab"><b>${s.nombre} · ${s.pregunta}</b>
+        <div class="puntos">${[0, 1, 2].map(v =>
+          `<button class="punto ${p[s.clave] === v ? "sel" : ""}" data-clave="${s.clave}" data-v="${v}">${v}</button>`).join("")}</div>
+      </div>
+      <div class="dijo ${dijo[s.clave] ? "" : "vacio"}">${dijo[s.clave] ? (s.clave === "c" ? dijo.c : esc(dijo[s.clave])) : "(no escribió nada)"}</div>
+    </div>`).join("");
+  $("c-sig").disabled = !completo(p);
+  $("c-ant").disabled = n === 1;
+  mostrar("calificar");
+}
+$("c-filas").addEventListener("click", e => {
+  const b = e.target.closest(".punto");
+  if (!b) return;
+  const clave = b.dataset.clave, v = Number(b.dataset.v), antes = estado.puntos[estado.cal][clave];
+  if (antes === v) return;
+  estado.puntos[estado.cal][clave] = v;
+  LOG(antes == null ? "Marcó puntaje" : "Cambió puntaje", { ...infoC(estado.cal + 1, NOMBRE_SECCION[clave]), antes, despues: v });
+  guardar();
+  irACalificar(estado.cal);
+});
+$("c-sig").onclick = () => irACalificar(estado.cal + 1);
+$("c-ant").onclick = () => { LOG("Volvió a una lámina anterior", infoC(estado.cal)); irACalificar(estado.cal - 1); };
+
+// ---------------------------------------------------------------- resultados
+function calcular() {
+  const total = estado.puntos.reduce((s, p) => s + sumaConcepto(p), 0);
+  const p100 = Math.round(total / MAX * 100);
+  return { total, p100, nivel: (NIVELES.find(x => p100 >= x.min && p100 <= x.max) || NIVELES[0]).nombre };
+}
+function payload() {
+  const { total, p100, nivel } = calcular();
+  return {
+    ...estado.datos, id: estado.id, modalidad: "escrita", escribe: estado.escribe,
+    puntaje_total: total, puntaje_max: MAX, puntaje_100: p100, nivel,
+    respuestas: CONCEPTOS.map((c, i) => ({
+      n: c.n, concepto: c.nombre, region: REGIONES[c.region].nombre,
+      a: estado.puntos[i].a, b: estado.puntos[i].b, c: estado.puntos[i].c,
+      a_cita: estado.resp[i].a.trim(), b_cita: estado.resp[i].b.trim(), c_cita: tresCosas(estado.resp[i]).join(" | "),
+    })),
+  };
+}
+function mostrarResultados() {
+  const d = estado.datos, { total, p100, nivel } = calcular();
+  $("r-datos").textContent = [d.nombre, [d.grado, d.paralelo].filter(Boolean).join(" "), d.evaluador && "Docente: " + d.evaluador, d.fecha]
+    .filter(Boolean).join(" · ");
+  $("r-total").textContent = `${total} / ${MAX}`;
+  $("r-100").textContent = `${p100} / 100`;
+  $("r-niveles").innerHTML = NIVELES.map(x => `<div class="${x.nombre === nivel ? "es" : ""}"><b>${x.nombre}</b><br>${x.min}–${x.max}</div>`).join("");
+  const filas = REGIONES.map((r, ri) => {
+    const ps = estado.puntos.filter((_, i) => CONCEPTOS[i].region === ri);
+    const s = k => ps.reduce((t, p) => t + (p[k] || 0), 0), max = ps.length * 2;
+    return `<tr><td>${r.nombre}</td><td>${s("a")} / ${max}</td><td>${s("b")} / ${max}</td><td>${s("c")} / ${max}</td><td>${s("a") + s("b") + s("c")} / ${max * 3}</td></tr>`;
+  });
+  const t = k => estado.puntos.reduce((s, p) => s + (p[k] || 0), 0);
+  filas.push(`<tr class="reg"><td>Total</td><td>${t("a")} / 54</td><td>${t("b")} / 54</td><td>${t("c")} / 54</td><td>${total} / 162</td></tr>`);
+  $("r-tabla").innerHTML = filas.join("");
+  $("r-detalle").innerHTML = CONCEPTOS.map((c, i) => {
+    const r = estado.resp[i], p = estado.puntos[i];
+    return `<tr><td>${c.n} · ${c.nombre}</td><td class="txt">${esc(r.a)}</td><td class="txt">${esc(r.b)}</td>
+      <td class="txt">${tresCosas(r).map(esc).join("<br>")}</td><td>${p.a ?? "—"}</td><td>${p.b ?? "—"}</td><td>${p.c ?? "—"}</td></tr>`;
+  }).join("");
+  const resumen = `PT ${total}/162 · ${p100}/100 · ${nivel}`;
+  if (!estado.terminada) { estado.terminada = true; LOG("Terminó la evaluación", { detalle: resumen }); }
+  else LOG("Vio los resultados", { detalle: resumen });
+  pintarBitacora();
+  $("b-enviar").disabled = !SHEET_URL;
+  $("r-estado").textContent = SHEET_URL ? "Los datos se envían solos mientras se evalúa; este botón confirma que todo llegó."
+    : "Google Sheets sin configurar: todo queda guardado en esta compu. Use «Descargar CSV» y «Descargar registro de cambios».";
+  mostrar("resultados");
+}
+function pintarBitacora() {
+  const b = estado.bitacora || [];
+  const hora = t => new Date(t).toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  $("r-bit-titulo").textContent = `Registro de cambios (${b.length} acciones)`;
+  $("r-bitacora").innerHTML = b.map(x => `<tr><td>${hora(x.t)}</td><td>${esc(x.accion)}</td>
+    <td>${x.n ? x.n + " · " + esc(x.concepto) : ""}</td><td>${esc(x.pregunta)}</td><td>${esc(x.antes)}</td>
+    <td>${esc(x.despues || x.detalle || "")}</td></tr>`).join("");
+}
+$("b-enviar").onclick = async () => {
+  $("b-enviar").disabled = true;
+  $("r-estado").textContent = "Enviando…";
+  LOG("Pidió confirmar el envío a Google Sheets");
+  const ok = await sync.enviar();  // solo es «ok» si el Apps Script confirma cada cambio
+  estado.enviado = ok;
+  guardar();
+  pintarBitacora();
+  $("r-estado").textContent = ok ? "Todo enviado y confirmado por la hoja de Google. ✔"
+    : "No se pudo confirmar el envío (¿sin internet?). Se reintentará solo; mientras tanto descargue el CSV de respaldo.";
+  $("b-enviar").disabled = false;
+};
+$("b-bitacora").onclick = () => {
+  LOG("Descargó el registro de cambios");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([sync.csv()], { type: "text/csv;charset=utf-8" }));
+  a.download = `EMSEO_registro_${(estado.datos.nombre || "estudiante").replace(/\s+/g, "_")}_${estado.datos.fecha}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  pintarBitacora();
+};
+$("b-csv").onclick = () => {
+  const d = payload();
+  const enc = ["estudiante", "grado", "paralelo", "docente", "fecha", "n", "concepto", "region",
+    "que_es", "grupo", "tres_cosas", "evocacion", "categorizacion", "caracterizacion", "total_concepto"];
+  const q = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const filas = d.respuestas.map(r => [d.nombre, d.grado, d.paralelo, d.evaluador, d.fecha, r.n, r.concepto, r.region,
+    r.a_cita, r.b_cita, r.c_cita, r.a, r.b, r.c, (r.a || 0) + (r.b || 0) + (r.c || 0)].map(q).join(";"));
+  filas.push(["", "", "", "", "", "", "TOTAL", "", "", "", "", "", "", "", d.puntaje_total].map(q).join(";"));
+  filas.push(["", "", "", "", "", "", "SOBRE 100", "", "", "", "", "", "", "", d.puntaje_100].map(q).join(";"));
+  filas.push(["", "", "", "", "", "", "NIVEL", "", "", "", "", "", "", "", d.nivel].map(q).join(";"));
+  const blob = new Blob(["﻿" + [enc.join(";"), ...filas].join("\r\n")], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `EMSEO_escrita_${(d.nombre || "estudiante").replace(/\s+/g, "_")}_${d.fecha}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  estado.csv = true;
+  LOG("Descargó el CSV de resultados");
+  pintarBitacora();
+};
+$("b-imprimir").onclick = () => { document.querySelector("details").open = true; window.print(); };
+$("b-recalificar").onclick = () => {
+  LOG("Volvió a revisar la calificación");
+  if (estado.escribe === "docente") irAPaso(1); else irACalificar(0);
+};
+$("b-nuevo").onclick = () => {
+  const enNube = SHEET_URL && sync.pendientes() === 0;
+  const aviso = enNube || estado.csv
+    ? "¿Empezar con un nuevo estudiante? Esta evaluación queda guardada en el registro."
+    : "Estos resultados todavía NO están en Google Sheets ni en un CSV. Quedarán en el archivo de esta compu, " +
+      "pero conviene descargar el CSV primero. ¿Empezar con un nuevo estudiante?";
+  if (!confirm(aviso)) return;
+  LOG("Cerró la evaluación (nuevo estudiante)");
+  sync.enviar();
+  archivar();
+  borrarGuardado();
+  estado = nuevoEstado();
+  ["f-nombre", "f-grado", "f-paralelo"].forEach(id => $(id).value = "");
+  quienEscribe = null;
+  document.querySelectorAll(".opcion").forEach(x => x.classList.remove("sel"));
+  $("nota-retomar").hidden = true;
+  mostrar("inicio");
+};
+</script>
+</body>
+</html>

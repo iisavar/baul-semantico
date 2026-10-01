@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EMSEO · Baúl Semántico</title>
+<style>
+  :root { --tinta: #1a1a1a; --gris: #595959; --linea: #d0d0d0; --panel: #f4f4f4;
+          --costa: #C39A55; --sierra: #8A6A4F; --amazonia: #4E7A4A; --insular: #3F7A8C; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--panel); color: var(--tinta); font-family: "Times New Roman", Times, Georgia, serif; font-size: 17px; }
+  .franja { height: 6px; background: linear-gradient(90deg, var(--costa) 0 25%, var(--sierra) 25% 50%, var(--amazonia) 50% 75%, var(--insular) 75%); }
+  main { max-width: 920px; margin: 0 auto; padding: 36px 16px 48px; }
+  .uni { text-align: center; color: var(--gris); margin: 0; }
+  h1 { text-align: center; font-size: 32px; margin: 6px 0 4px; }
+  .sub { text-align: center; color: var(--gris); margin: 0 0 30px; }
+  h2 { font-size: 20px; margin: 28px 0 10px; }
+  .grilla { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  a.tarjeta { display: block; background: #fff; border: 1px solid var(--linea); border-radius: 6px; padding: 18px 18px 16px;
+              color: inherit; text-decoration: none; transition: border-color .15s, box-shadow .15s; }
+  a.tarjeta:hover, a.tarjeta:focus-visible { border-color: var(--tinta); box-shadow: 0 2px 8px rgba(0,0,0,.08); outline: none; }
+  .num { display: inline-block; min-width: 28px; text-align: center; font-weight: bold; color: #fff; background: #595959;
+         border-radius: 4px; padding: 1px 6px; margin-right: 6px; }
+  .tarjeta b { font-size: 19px; }
+  .tarjeta p { margin: 8px 0 0; color: var(--gris); font-size: 15px; line-height: 1.4; }
+  .nota { margin-top: 30px; font-size: 14px; color: var(--gris); text-align: center; line-height: 1.5; }
+  @media (max-width: 640px) { .grilla { grid-template-columns: 1fr; } h1 { font-size: 26px; } }
+</style>
+</head>
+<body>
+<div class="franja"></div>
+<main>
+  <p class="uni">Universidad Bolivariana del Ecuador</p>
+  <h1>EMSEO · Baúl Semántico</h1>
+  <p class="sub">Evaluación de Memoria Semántica mediante Evocación Oral · estudiantes de 9 años</p>
+
+  <h2>Aplicar en la computadora</h2>
+  <div class="grilla">
+    <a class="tarjeta" href="3_Digital_para_marcar.html">
+      <span class="num">3</span><b>Digital para marcar</b>
+      <p>El estudiante responde en voz alta y el docente marca 0, 1 o 2 en cada pregunta.</p>
+    </a>
+    <a class="tarjeta" href="4_Digital_para_escribir.html">
+      <span class="num">4</span><b>Digital para escribir</b>
+      <p>Las respuestas quedan escritas: las escribe el docente (y marca en el momento) o el estudiante (y el docente califica al final).</p>
+    </a>
+  </div>
+
+  <h2>Para imprimir</h2>
+  <div class="grilla">
+    <a class="tarjeta" href="1_Impresa_para_marcar.pdf">
+      <span class="num">1</span><b>Impresa para marcar</b>
+      <p>Hoja de registro del docente (0 · 1 · 2) y las 27 láminas para mostrar al estudiante.</p>
+    </a>
+    <a class="tarjeta" href="2_Impresa_para_escribir.pdf">
+      <span class="num">2</span><b>Impresa para escribir</b>
+      <p>Cuadernillo del estudiante con un ejemplo resuelto. El docente califica después en la hoja de registro.</p>
+    </a>
+    <a class="tarjeta" href="5_Rubrica.pdf">
+      <span class="num">5</span><b>Rúbrica</b>
+      <p>Protocolo de aplicación, ejemplo de práctica, criterios 0 · 1 · 2 y referencia de los 27 conceptos. Solo para el docente.</p>
+    </a>
+    <a class="tarjeta" href="google_sheets/Guia_conectar_Google_Sheets.pdf">
+      <span class="num">⚙</span><b>Conectar Google Sheets</b>
+      <p>Cómo hacer que las evaluaciones digitales lleguen solas, en tiempo real, a una hoja de Google.</p>
+    </a>
+  </div>
+
+  <p class="nota">Las apps digitales necesitan, en la misma carpeta, el archivo <code>emseo_sync.js</code> y la carpeta <code>img_laminas</code>.<br>
+    Los datos de los estudiantes son de menores de edad: compartirlos solo con el equipo del proyecto.</p>
+</main>
+</body>
+</html>
