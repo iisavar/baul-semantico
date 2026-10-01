@@ -13,3 +13,5 @@ Proyecto «La memoria semántica en el desarrollo de la oralidad de los estudian
 Funcionan en el navegador, sin instalar nada. **Ningún dato de estudiantes se guarda en este repositorio**: los resultados quedan en la compu del docente y, si se configura, en la hoja de Google privada del proyecto.
 
 Créditos de las fotografías: ver [`CREDITOS.md`](CREDITOS.md).
+
+El logo es propiedad de la Universidad Bolivariana del Ecuador y se usa en este proyecto institucional de la UBE.

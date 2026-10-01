@@ -69,7 +69,7 @@
   .opcion b { display: block; font-size: 18px; margin-bottom: 2px; }
   .opcion small { color: var(--gris); font-size: 14px; }
   .opcion.sel { border: 2px solid var(--tinta); background: #f7f7f7; }
-  .quien.error .opcion { border-color: #b00; }
+  .quien.error .opcion { border-color: #9C2B2B; }
   @media (max-width: 640px) { .quien .ops { grid-template-columns: 1fr; } }
   /* modo docente: botones 0-1-2 junto a cada respuesta */
   .solo-docente { display: none; }
@@ -208,6 +208,15 @@
   #fin .solo-doc { margin-top: 56px; }
   .opcion b { font-size: 19px; }
   @media (max-width: 860px) { .lienzo, .cal { grid-template-columns: 1fr; } .marco { margin: 0 auto; } }
+
+  /* ===== Marca UBE (consenso de 4 especialistas): logo solo en pantallas del docente; el rojo solo dentro del logo ===== */
+  :root { --ube: #E4022C; --error: #9C2B2B; }
+  .logo-ube { display: block; height: 48px; width: auto; margin: 0 auto 10px; }
+  #resultados .logo-ube { height: 40px; }
+  #bienvenida .logo-ube, #ejemplo .logo-ube, #practica .logo-ube, #portada .logo-ube, #lamina .logo-ube,
+  #fin .logo-ube, #terminado .logo-ube, #calificar .logo-ube { display: none !important; }  /* salvaguarda: nunca frente al niño */
+  .error-msg:not(:empty)::before { content: "⚠ "; }
+  @media print { .logo-ube { height: 14mm; } }
 </style>
 </head>
 <body>
@@ -217,7 +226,7 @@
 <section id="inicio" class="pantalla centrada activa">
   <div class="tarjeta">
     <a class="volver" href="index.html">← Volver al inicio</a>
-    <p class="uni">Universidad Bolivariana del Ecuador</p>
+    <img class="logo-ube" src="img/logo_ube.png" alt="Universidad Bolivariana del Ecuador">
     <h1>EMSEO | Digital para escribir</h1>
     <p class="sub">Las respuestas quedan escritas y se califican con 0, 1 o 2</p>
     <div class="campo"><label for="f-nombre">Estudiante:</label><input id="f-nombre" autocomplete="off" aria-describedby="err-inicio"></div>
@@ -361,7 +370,7 @@
 <!-- 7. Resultados -->
 <section id="resultados" class="pantalla">
   <div class="tarjeta">
-    <p class="uni">Universidad Bolivariana del Ecuador</p>
+    <img class="logo-ube" src="img/logo_ube.png" alt="Universidad Bolivariana del Ecuador">
     <h1>Resultados EMSEO | Digital para escribir</h1>
     <p class="sub" id="r-datos"></p>
     <div class="grande">
@@ -572,7 +581,7 @@ function aplicarModo() {
 $("b-comenzar").onclick = () => {
   const nombre = $("f-nombre").value.trim();
   if (!nombre) {
-    $("f-nombre").focus(); $("f-nombre").style.borderBottomColor = "#b00"; $("f-nombre").setAttribute("aria-invalid", "true");
+    $("f-nombre").focus(); $("f-nombre").style.borderBottomColor = "#9C2B2B"; $("f-nombre").setAttribute("aria-invalid", "true");
     $("err-inicio").textContent = "Escriba el nombre del estudiante para comenzar.";
     return;
   }
