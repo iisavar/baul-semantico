@@ -79,10 +79,11 @@ body.vista-nino .sync { display: none; }
 .facts b { display: block; font-size: 28px; font-weight: 700; letter-spacing: -.02em; }
 .facts span { font-size: 13px; color: var(--muted); }
 .regions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-.reg { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; position: relative; overflow: hidden; }
-.reg::before { content: ""; position: absolute; left: 0; top: 0; right: 0; height: 4px; background: var(--c); }
-.reg b { display: block; font-size: 14px; margin-top: 2px; }
-.reg span { font-size: 12.5px; color: var(--muted); }
+.descripcion { font-size: 16px; line-height: 1.65; color: var(--ink-2); max-width: 520px; margin-top: 26px; padding-top: 24px; border-top: 1px solid var(--line-2); }
+.mapas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 26px 0 0; max-width: 560px; }
+.mapa { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 8px 10px; text-align: center; }
+.mapa img { width: 100%; aspect-ratio: 1; object-fit: contain; padding: 6px; }
+.mapa figcaption { font-size: 13px; font-weight: 600; color: var(--ink-2); margin-top: 4px; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
   box-shadow: 0 1px 2px rgba(16,24,40,.05), 0 16px 40px -16px rgba(16,24,40,.16); }
 .form { padding: 28px 30px 30px; }
@@ -134,16 +135,20 @@ body.vista-nino .sync { display: none; }
 .b-side .eyebrow { color: rgba(255,255,255,.75); }
 .b-side h2 { font-size: clamp(56px, 8vw, 104px); line-height: .95; font-weight: 800; letter-spacing: -.04em; margin: 18px 0 26px; overflow-wrap: anywhere; }
 .b-side .meta { font-size: 17px; color: rgba(255,255,255,.9); border-top: 1px solid rgba(255,255,255,.3); padding-top: 18px; }
-.b-side .btn { margin-top: auto; align-self: flex-start; background: #fff; color: var(--region-ink); border-color: #fff; min-height: 56px; padding: 0 28px; font-size: 16px; }
+.b-acciones { margin-top: auto; display: flex; gap: 10px; flex-wrap: wrap; }
+.b-side .btn { background: #fff; color: var(--region-ink); border-color: #fff; min-height: 56px; padding: 0 28px; font-size: 16px; }
+.b-side .btn.sec-claro { background: transparent; color: #fff; border-color: rgba(255,255,255,.6); padding: 0 20px; }
+.b-side .btn.sec-claro:hover { border-color: #fff; }
 .b-map { background: #fff; display: flex; align-items: center; justify-content: center; padding: 32px; min-height: 0; }
 .b-map img { width: 100%; max-width: 680px; max-height: calc(100vh - 160px); object-fit: contain; }
 
 /* ---------- lámina ---------- */
-.l-body { flex: 1; display: grid; grid-template-columns: minmax(0, auto) minmax(340px, 440px); justify-content: center; gap: 28px;
-  padding: 24px clamp(16px, 3vw, 32px); align-items: start; }
-.photo { position: relative; width: min(100%, calc((100vh - 120px) * 4 / 3), 860px); aspect-ratio: 4 / 3; background: #0d0f12;
+.l-body, .c-body { flex: 1; display: flex; justify-content: center; align-items: center; gap: 32px; padding: 24px clamp(16px, 3vw, 40px); }
+.l-body > .panel, .l-body > .respuestas { flex: 0 0 420px; min-width: 0; }
+.c-body > .panel { flex: 0 0 480px; min-width: 0; }
+.photo { position: relative; flex: 0 1 auto; width: min(calc((100vh - 130px) * 4 / 3), 900px, calc(100vw - 540px)); aspect-ratio: 4 / 3; background: #0d0f12;
   border-radius: 12px; overflow: hidden; box-shadow: 0 1px 2px rgba(16,24,40,.08), 0 18px 40px -18px rgba(16,24,40,.35); }
-@supports (height: 100dvh) { .photo { width: min(100%, calc((100dvh - 120px) * 4 / 3), 860px); } }
+@supports (height: 100dvh) { .photo { width: min(calc((100dvh - 130px) * 4 / 3), 900px, calc(100vw - 540px)); } }
 .photo img { width: 100%; height: 100%; object-fit: cover; }
 .photo img.cargando { visibility: hidden; }
 .aviso-foto { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center;
@@ -162,7 +167,8 @@ body.vista-nino .sync { display: none; }
 .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .punto { position: relative; height: 56px; border: 1.5px solid var(--line-2); border-radius: 9px; background: var(--surface);
   font: 700 21px var(--sans); color: var(--ink-2); }
-.punto:hover { border-color: var(--ink); }
+.punto:hover:not(:disabled) { border-color: var(--ink); }
+.punto:disabled { opacity: .35; border-style: dashed; cursor: not-allowed; }
 .punto.sel { background: var(--ink); border-color: var(--ink); color: #fff; box-shadow: 0 2px 8px -2px rgba(21,32,46,.55); }
 .punto.sel::after { content: "\2713"; position: absolute; top: 4px; right: 8px; font-size: 13px; font-weight: 700; }
 .nav { display: flex; gap: 10px; align-items: center; margin-top: 4px; }
@@ -204,9 +210,7 @@ body[data-escribe="estudiante"] .falta { display: none; }
 .nino .btn { min-height: 58px; font-size: 20px; padding: 0 36px; margin-top: 22px; }
 
 /* ---------- calificar (escribir) ---------- */
-.c-body { flex: 1; display: grid; grid-template-columns: minmax(0, auto) minmax(360px, 520px); justify-content: center; gap: 28px;
-  padding: 24px clamp(16px, 3vw, 32px); align-items: start; }
-.c-body .photo { width: min(100%, calc((100vh - 140px) * 4 / 3), 720px); }
+.c-body .photo { width: min(calc((100vh - 130px) * 4 / 3), 760px, calc(100vw - 600px)); }
 .c-titulo { font-size: 22px; font-weight: 700; margin-bottom: 14px; }
 .dijo { font: 400 19px/1.45 var(--nino); background: var(--bg); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; min-height: 46px; }
 .dijo.vacio { color: var(--aviso); font: 600 14px var(--sans); display: flex; align-items: center; }
@@ -280,12 +284,14 @@ details.card > div { padding: 0 24px 20px; }
 @media (hover: none) { .solo-pc { display: none !important; } }
 @media (max-width: 980px) {
   .a-body { grid-template-columns: 1fr; padding-top: 28px; padding-bottom: 32px; gap: 24px; align-items: start; }
-  .facts, .regions { display: none; }
+  .facts, .regions, .mapas { display: none; }
+  .descripcion { font-size: 15px; margin-top: 14px; padding-top: 14px; }
   .titulo { margin-bottom: 8px; }
   .e-body { grid-template-columns: 1fr; }
   .who { position: static; }
-  .l-body, .c-body { grid-template-columns: minmax(0, 640px); }
-  .photo, .c-body .photo { width: 100%; }
+  .l-body, .c-body { flex-direction: column; align-items: stretch; justify-content: flex-start; }
+  .photo, .c-body .photo { width: 100%; max-width: 640px; margin: 0 auto; }
+  .l-body > .panel, .l-body > .respuestas, .c-body > .panel { flex: none; width: 100%; max-width: 640px; margin: 0 auto; }
 }
 @media (max-width: 760px) {
   .two { grid-template-columns: 1fr; }
@@ -294,7 +300,8 @@ details.card > div { padding: 0 24px 20px; }
   .b-body { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
   .b-side { padding: 28px 20px; }
   .b-side h2 { font-size: 56px; margin: 10px 0 16px; }
-  .b-side .btn { margin-top: 24px; width: 100%; }
+  .b-acciones { margin-top: 24px; }
+  .b-acciones .btn:last-child { flex: 1; }
   .b-map { padding: 16px; }
   .b-map img { max-height: 46vh; }
   .steps span:not(.on) { font-size: 0; gap: 0; padding: 6px 4px; }
@@ -348,3 +355,15 @@ details.card > div { padding: 0 24px 20px; }
   .firma span { flex: 1; border-top: 1px solid var(--ink); padding-top: 4px; text-align: center; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* ---------- fin del estudiante y lista «Por calificar» (Digital para escribir) ---------- */
+.fin-docente { margin-top: 52px; padding-top: 22px; border-top: 1px solid var(--line-2); display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.mensaje.nino .fin-docente p { font: 700 12px var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 4px; }
+.mensaje.nino .fin-docente .btn { font: 600 15px var(--sans); min-height: 48px; margin-top: 0; padding: 0 22px; width: min(100%, 380px); }
+.pendientes { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
+.pend-tit { font-size: 13px; font-weight: 700; color: var(--ink-2); margin-bottom: 8px; }
+#pend-lista { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; max-height: 260px; overflow: auto; }
+#pend-lista li { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--bg); border-radius: 8px; padding: 8px 10px 8px 12px; }
+#pend-lista b { display: block; font-size: 14px; }
+#pend-lista small { font-size: 12.5px; color: var(--muted); }
+#pend-lista .btn { min-height: 36px; font-size: 13px; padding: 0 14px; flex: none; }

@@ -18,20 +18,14 @@
   </header>
   <div class="a-body">
     <div class="a-intro">
-      <div class="eyebrow">Instrumento de evaluación | 5.º a 7.º de básica</div>
       <h1 class="titulo">Baúl Semántico</h1>
       <p class="sub">Evaluación de Memoria Semántica mediante Evocación Oral (EMSEO)</p>
-      <div class="facts">
-        <div><b>27</b><span>láminas</span></div>
-        <div><b>4</b><span>regiones</span></div>
-        <div><b>3</b><span>preguntas</span></div>
-        <div><b>162</b><span>puntos</span></div>
-      </div>
-      <div class="regions">
-        <div class="reg" style="--c:var(--costa)"><b>Costa</b><span>7 láminas</span></div>
-        <div class="reg" style="--c:var(--sierra)"><b>Sierra</b><span>7 láminas</span></div>
-        <div class="reg" style="--c:var(--amazonia)"><b>Amazonía</b><span>9 láminas</span></div>
-        <div class="reg" style="--c:var(--insular)"><b>Insular</b><span>4 láminas</span></div>
+      <p class="descripcion">Instrumento para evaluar la memoria semántica a través de la evocación oral. El estudiante observa fotografías de las cuatro regiones del Ecuador y responde tres preguntas sobre cada una: qué es, a qué grupo pertenece y qué sabe de ello.</p>
+      <div class="mapas">
+        <figure class="mapa"><img src="img_laminas/region_1.png" alt="Mapa de la región Costa"><figcaption>Costa</figcaption></figure>
+        <figure class="mapa"><img src="img_laminas/region_2.png" alt="Mapa de la región Sierra"><figcaption>Sierra</figcaption></figure>
+        <figure class="mapa"><img src="img_laminas/region_3.png" alt="Mapa de la región Amazonía"><figcaption>Amazonía</figcaption></figure>
+        <figure class="mapa"><img src="img_laminas/region_4.png" alt="Mapa de la región Insular"><figcaption>Insular</figcaption></figure>
       </div>
     </div>
     <div class="card form">
@@ -66,10 +60,12 @@
   <div class="bar"><div class="steps" id="p-steps"></div><div class="espacio"></div><span class="slot-sync"></span></div>
   <div class="b-body">
     <div class="b-side">
-      <div class="eyebrow" id="p-eyebrow">Región 1 de 4</div>
       <h2 id="p-titulo">Costa</h2>
-      <div class="meta" id="p-meta"></div>
-      <button class="btn" id="b-portada">Empezar región <span class="arr">&rarr;</span></button>
+      <div class="meta" id="p-meta" hidden></div>
+      <div class="b-acciones">
+        <button class="btn sec-claro" id="b-portada-ant" aria-label="Volver a la lámina anterior">&larr;<span class="l-largo">&nbsp;Anterior</span></button>
+        <button class="btn" id="b-portada">Empezar región <span class="arr">&rarr;</span></button>
+      </div>
     </div>
     <div class="b-map"><img id="p-mapa" alt="Mapa del Ecuador con la región resaltada"></div>
   </div>
@@ -91,14 +87,6 @@
   </div>
 </section>
 
-<!-- Evaluación terminada (los resultados no se muestran frente al estudiante) -->
-<section id="terminado" class="pantalla centrada">
-  <div class="mensaje">
-    <h1>Evaluación terminada</h1>
-    <p>¡Muchas gracias por participar!</p>
-    <button class="btn sec solo-doc" id="b-ver-resultados">Solo para el docente: ver resultados</button>
-  </div>
-</section>
 
 <!-- Resultados -->
 <section id="resultados" class="pantalla">
@@ -117,7 +105,7 @@
         <button class="btn sec" id="b-enviar" hidden>Confirmar envío</button>
         <button class="btn sec" id="b-imprimir">Imprimir</button>
         <button class="btn sec" id="b-revisar">Revisar respuestas</button>
-        <button class="btn sec" id="b-bitacora">Descargar historial de cambios</button>
+        <button class="btn sec" id="b-bitacora" hidden>Descargar historial de cambios</button>
         <button class="btn btn-fin" id="b-nuevo">Siguiente estudiante <span class="arr">&rarr;</span></button>
       </div>
       <p class="nota" id="r-estado"></p>
@@ -154,7 +142,7 @@
           <tbody id="r-detalle"></tbody>
         </table></div>
       </details>
-      <details class="card registro">
+      <details class="card registro" hidden>
         <summary id="r-bit-titulo">Historial de cambios</summary>
         <div class="tabla-scroll"><table class="mx bitacora">
           <thead><tr><th>Hora</th><th>Acción</th><th>Lámina</th><th>Pregunta</th><th>Antes</th><th>Después</th></tr></thead>
@@ -169,6 +157,7 @@
 <span class="sync" id="sync" hidden></span>
 
 <script src="emseo_sync.js"></script>
+<script src="emseo_excel.js"></script>
 <script>
 // ---------------------------------------------------------------- configuración
 // URL del Apps Script (Implementar → Aplicación web). Vacía = no se envía nada.
@@ -371,7 +360,7 @@ $("b-comenzar").onclick = () => {
   if (pendiente && pendiente.datos && pendiente.datos.nombre && !pendiente.enviado && !pendiente.csv &&
       !confirm("Hay una evaluación guardada de " + iniciales(pendiente.datos.nombre) + " que no se descargó ni envió. " +
                "Se guardará en el archivo de esta computadora antes de empezar con el nuevo estudiante. ¿Continuar?")) return;
-  if (pendiente && pendiente.datos && pendiente.datos.nombre) archivar(pendiente);  // nunca se borra sin guardar
+  if (pendiente && pendiente.datos && pendiente.datos.nombre) { encolarDe(pendiente); archivar(pendiente); }  // nunca se borra sin guardar
   estado = nuevoEstado();
   estado.datos = {
     nombre, grado: $("f-grado").value.trim(), paralelo: $("f-paralelo").value.trim(),
@@ -395,14 +384,14 @@ function irAPaso(i) {
   }
   estado.paso = destino;
   guardar();
-  if (estado.paso >= PASOS.length) { mostrar("terminado"); return; }
+  if (estado.paso >= PASOS.length) return finalizar();
   const paso = PASOS[estado.paso];
   if (paso.tipo === "portada") return mostrarPortada(paso.region);
   mostrarLamina(paso.n);
 }
 
 $("b-portada").onclick = () => irAPaso(estado.paso + 1);
-$("b-ver-resultados").onclick = () => mostrarResultados();
+$("b-portada-ant").onclick = () => irAPaso(estado.paso - 1);
 
 // ---------------------------------------------------------------- lámina
 let filaActiva = 0;
@@ -425,6 +414,7 @@ function pintarFilas(n) {
       <div class="seg">${botonesPunto(s.clave, p[s.clave], s.nombre)}</div>
     </div>`).join("");
   $("b-sig").disabled = !completo(p);
+  $("b-sig").innerHTML = (estado.paso === PASOS.length - 1 ? "Finalizar y guardar resultados" : "Siguiente") + ' <span class="arr">&rarr;</span>';
   const faltan = SECCIONES.map((s, i) => p[s.clave] == null ? i + 1 : 0).filter(Boolean);
   $("falta").textContent = faltan.length ? textoFalta(faltan) : "";
   $("b-ant").disabled = estado.paso === 0;
@@ -514,18 +504,19 @@ function barraLamina(prefijo, n, hecho) {
 function mostrarPortada(ri) {
   const r = REGIONES[ri];
   ponerRegion(r);
-  const primera = CONCEPTOS.findIndex(c => c.region === ri) + 1, ultima = primera + r.conceptos.length - 1;
-  $("p-eyebrow").textContent = `Región ${ri + 1} de ${REGIONES.length}`;
   $("p-titulo").textContent = r.nombre;
-  $("p-meta").textContent = [r.extra, `${r.conceptos.length} láminas`, `Láminas ${primera} a ${ultima}`].filter(Boolean).join(" | ");
+  $("p-meta").textContent = r.extra || "";
+  $("p-meta").hidden = !r.extra;
+  $("b-portada-ant").hidden = ri === 0;
   $("p-steps").innerHTML = REGIONES.map((x, i) =>
     `<span class="${i === ri ? "on" : i < ri ? "ok" : ""}" style="--c:var(--${CLAVE_REG[i]})"><i></i>${x.nombre}</span>`).join("");
   $("p-mapa").src = r.mapa;
   mostrar("portada");
 }
-const botonesPunto = (clave, valor, nombre) => [0, 1, 2].map(v =>
-  `<button class="punto ${valor === v ? "sel" : ""}" data-clave="${clave}" data-v="${v}" aria-label="${nombre}: ${v}" aria-pressed="${valor === v}">${v}</button>`).join("");
-const estadoPunto = v => v == null ? `<span class="q-state">Sin marcar</span>` : `<span class="q-state ok">${v} ${v === 1 ? "punto" : "puntos"}</span>`;
+const botonesPunto = (clave, valor, nombre, soloCero = false) => [0, 1, 2].map(v =>
+  `<button class="punto ${valor === v ? "sel" : ""}" data-clave="${clave}" data-v="${v}" aria-label="${nombre}: ${v}" aria-pressed="${valor === v}"` +
+  `${soloCero && v > 0 ? ' disabled title="Sin respuesta escrita solo se puede poner 0"' : ""}>${v}</button>`).join("");
+const estadoPunto = v => v == null ? `<span class="q-state">Sin marcar</span>` : "";
 function fechaLarga(iso) { const [a, m, d] = String(iso || "").split("-"); return d ? `${d}/${m}/${a}` : ""; }
 function pintarInforme(extra) {  // cabecera, puntaje, escala, barras y tabla región × pregunta
   const d = estado.datos, { total, p100, nivel } = calcular();
@@ -560,6 +551,48 @@ function pintarInforme(extra) {  // cabecera, puntaje, escala, barras y tabla re
   return { total, p100, nivel };
 }
 
+// ---------------------------------------------------------------- Excel y cierre
+function nombreArchivo(d) {  // siempre con el nombre del estudiante en mayúsculas
+  const limpio = s => String(s || "").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim();
+  return `${limpio(d.nombre).toUpperCase() || "ESTUDIANTE"} - EMSEO ${fechaLarga(d.fecha).replace(/\//g, "-")}.xlsx`;
+}
+function descargarExcel() {
+  const d = payload(), escrita = d.modalidad === "escrita", B = v => ({ v, negrita: true });
+  const num = v => (v === null || v === undefined || v === "") ? "" : Number(v);
+  const hora = d.inicio ? new Date(d.inicio).toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" }) : "";
+  const textos = r => escrita ? [r.a_cita, r.b_cita, r.c_cita] : [];
+  const filas = [
+    [B("Baúl Semántico | Evaluación de Memoria Semántica mediante Evocación Oral (EMSEO)")],
+    [escrita ? "Digital para escribir | " + (d.escribe === "docente" ? "escribió el docente" : "escribió el estudiante") : "Digital para marcar"],
+    [],
+    [B("Estudiante"), d.nombre], [B("Grado"), d.grado], [B("Paralelo"), d.paralelo], [B("Edad"), num(d.edad)], [B("Sexo"), d.sexo],
+    [B("Lengua materna"), d.lengua], [B("Origen de la familia"), d.region_origen],
+    [B("Necesidades educativas especiales"), d.nee === "Sí" && d.nee_cual ? "Sí (" + d.nee_cual + ")" : d.nee],
+    [B("Docente"), d.evaluador], [B("Fecha"), fechaLarga(d.fecha)], [B("Hora de inicio"), hora],
+    [],
+    [B("Puntaje total (de 162)"), d.puntaje_total], [B("Puntaje sobre 100"), d.puntaje_100], [B("Nivel referencial"), d.nivel],
+    [],
+    ["N.º", "Lámina", "Región", ...(escrita ? ["¿Qué es esto?", "¿A qué grupo pertenece?", "¿Qué sabe?"] : []),
+      "Evocación", "Categorización", "Caracterización", "Total"].map(B),
+    ...d.respuestas.map(r => [r.n, r.concepto, r.region, ...textos(r), num(r.a), num(r.b), num(r.c), (r.a || 0) + (r.b || 0) + (r.c || 0)]),
+    [B("Total"), "", "", ...(escrita ? ["", "", ""] : []), ...["a", "b", "c"].map(k => d.respuestas.reduce((t, r) => t + (r[k] || 0), 0)), d.puntaje_total],
+  ];
+  descargarXlsx(nombreArchivo(d), "Resultados", filas,
+    escrita ? [32, 18, 12, 26, 26, 36, 12, 15, 15, 8] : [32, 22, 12, 12, 15, 15, 8]);
+  estado.csv = true;
+  LOG("Descargó el Excel de resultados");
+  guardar();
+  pintarBitacora();
+}
+function finalizar() {  // «Finalizar y guardar resultados»: muestra los resultados y descarga el Excel de una vez
+  LOG("Finalizó y guardó los resultados");
+  mostrarResultados();
+  descargarExcel();
+}
+function encolarDe(e) {  // deja en la cola de envío lo pendiente de otra evaluación (sin internet no se pierde)
+  const antes = estado; estado = e; sync.encolar(); estado = antes;
+}
+
 function mostrarResultados() {
   const { total, p100, nivel } = pintarInforme([]);
 
@@ -575,7 +608,7 @@ function mostrarResultados() {
 
   $("b-enviar").hidden = !SHEET_URL;  // sin conexión configurada no se muestra
   $("r-estado").textContent = SHEET_URL ? "Los resultados se guardan en línea mientras evalúa. «Confirmar envío» revisa que todo haya llegado."
-    : "Los resultados quedan guardados en esta computadora. Descargue una copia con «Descargar resultados (Excel)».";
+    : "";
   mostrar("resultados");
 }
 
@@ -611,25 +644,7 @@ $("b-bitacora").onclick = () => {
   pintarBitacora();
 };
 
-$("b-csv").onclick = () => {
-  const d = payload();
-  const enc = ["estudiante", "grado", "paralelo", "docente", "fecha", "hora_inicio", "edad", "sexo", "lengua_materna", "region_origen", "nee", "nee_cual", "n", "concepto", "region", "evocacion", "categorizacion", "caracterizacion", "total_concepto"];
-  const esc = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
-  const filas = d.respuestas.map(r => [d.nombre, d.grado, d.paralelo, d.evaluador, d.fecha, d.inicio ? new Date(d.inicio).toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" }) : "", d.edad, d.sexo, d.lengua, d.region_origen, d.nee, d.nee_cual, r.n, r.concepto, r.region, r.a, r.b, r.c,
-    (r.a || 0) + (r.b || 0) + (r.c || 0)].map(esc).join(";"));
-  filas.push(["", "", "", "", "", "", "", "", "", "", "", "", "", "TOTAL", "", "", "", "", d.puntaje_total].map(esc).join(";"));
-  filas.push(["", "", "", "", "", "", "", "", "", "", "", "", "", "SOBRE 100", "", "", "", "", d.puntaje_100].map(esc).join(";"));
-  filas.push(["", "", "", "", "", "", "", "", "", "", "", "", "", "NIVEL", "", "", "", "", d.nivel].map(esc).join(";"));
-  const blob = new Blob(["﻿" + [enc.join(";"), ...filas].join("\r\n")], { type: "text/csv;charset=utf-8" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `EMSEO_resultados_${(d.nombre || "estudiante").replace(/\s+/g, "_")}_${d.fecha}.csv`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-  estado.csv = true;
-  LOG("Descargó el CSV de resultados");
-  pintarBitacora();
-};
+$("b-csv").onclick = () => descargarExcel();
 
 $("b-imprimir").onclick = () => window.print();
 window.addEventListener("beforeprint", () => {  // al imprimir se abre el detalle por concepto (no el historial)
@@ -642,11 +657,11 @@ $("b-nuevo").onclick = () => {
   const enNube = SHEET_URL && sync.pendientes() === 0;
   const aviso = enNube || estado.csv
     ? "¿Empezar con un nuevo estudiante? Esta evaluación queda guardada en el registro."
-    : "Estos resultados todavía NO están en Google Sheets ni en un CSV. Quedarán en el archivo de esta compu, " +
-      "pero conviene descargar el CSV primero. ¿Empezar con un nuevo estudiante?";
+    : "Estos resultados todavía NO están en Google Sheets ni en Excel. Quedarán en el archivo de esta compu, " +
+      "pero conviene descargar el Excel primero. ¿Empezar con un nuevo estudiante?";
   if (!confirm(aviso)) return;
   LOG("Cerró la evaluación (nuevo estudiante)");
-  sync.enviar();
+  sync.encolar();
   archivar();
   borrarGuardado();
   estado = nuevoEstado();

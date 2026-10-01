@@ -32,7 +32,7 @@ function crearSync({ url, estado, guardar, foto, indicador }) {
   }
 
   function estadoIndicador() {
-    const p = pendientes().length;
+    const p = pendientes().length + leerCola().reduce((t, x) => t + x.eventos.length, 0);
     if (!url) return pintar("● Guardado en esta computadora", "local");
     if (!navigator.onLine) return pintar(`○ Sin internet | ${p} ${p === 1 ? "cambio" : "cambios"} por enviar`, "pendiente");
     if (p) return pintar("○ Guardando en línea…", "pendiente");
@@ -62,6 +62,10 @@ function crearSync({ url, estado, guardar, foto, indicador }) {
 
   async function enviar() {
     if (!url || enviando) return false;
+    if (leerCola().length) {  // primero lo que quedó en cola: el orden importa para no descartar eventos
+      await vaciarCola();
+      if (leerCola().length) { estadoIndicador(); clearTimeout(temporizador); temporizador = setTimeout(enviar, 15000); return false; }
+    }
     const lote = pendientes();
     if (!lote.length) { estadoIndicador(); return true; }
     enviando = true;
@@ -86,12 +90,49 @@ function crearSync({ url, estado, guardar, foto, indicador }) {
     }
   }
 
-  window.addEventListener("online", () => programar(200));
+  // Cola de envíos de estudiantes anteriores: si se pasa al siguiente estudiante sin internet,
+  // lo que faltaba enviar queda guardado aquí y se manda solo cuando vuelve la conexión.
+  const CLAVE_COLA = "emseo-cola-envios";
+  const leerCola = () => { try { return JSON.parse(localStorage.getItem(CLAVE_COLA) || "[]"); } catch (e) { return []; } };
+  const escribirCola = c => { try { localStorage.setItem(CLAVE_COLA, JSON.stringify(c)); } catch (e) { /* sin almacenamiento */ } };
+  function encolar() {  // guarda lo pendiente del estudiante actual antes de cambiar de estudiante
+    const lote = pendientes();
+    if (!url || !lote.length) return;
+    const cola = leerCola();
+    cola.push({ ...foto(), tipo: "sync", eventos: lote });
+    escribirCola(cola);
+    const e = asegurar();
+    e.sincronizadoHasta = lote[lote.length - 1].seq;  // ya quedó a cargo de la cola
+    guardar();
+    setTimeout(vaciarCola, 300);
+  }
+  let vaciando = false;
+  async function vaciarCola() {
+    if (!url || vaciando || !navigator.onLine) return;
+    vaciando = true;
+    try {
+      let cola = leerCola();
+      while (cola.length) {
+        const r = await fetch(url, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(cola[0]) });
+        const j = await r.json().catch(() => null);
+        if (!r.ok || !j || !j.ok) break;
+        cola = leerCola().slice(1);  // el Apps Script ignora eventos repetidos (por id y número de orden)
+        escribirCola(cola);
+      }
+    } catch (err) { /* sin internet: se reintenta luego */ }
+    vaciando = false;
+    if (leerCola().length) setTimeout(vaciarCola, 30000);
+  }
+
+  window.addEventListener("online", () => { programar(200); vaciarCola(); });
   window.addEventListener("offline", estadoIndicador);
   setTimeout(estadoIndicador, 0);
+  setTimeout(vaciarCola, 2000);
 
   return {
     registrar,
+    encolar,
+    enConCola: () => leerCola().length,
     enviar,                       // fuerza el envío; devuelve true si todo quedó confirmado
     pendientes: () => pendientes().length,
     refrescar: estadoIndicador,
