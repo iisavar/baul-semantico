@@ -217,18 +217,18 @@
   #fin .logo-ube, #terminado .logo-ube, #calificar .logo-ube { display: none !important; }  /* salvaguarda: nunca frente al niño */
   .error-msg:not(:empty)::before { content: "⚠ "; }
   @media print { .logo-ube { height: 14mm; } }
+  @media (max-width: 640px) { h1 { font-size: 26px; } .sub { font-size: 15px; } }
 </style>
 </head>
 <body>
-<div class="franja" aria-hidden="true"></div>
 
 <!-- 1. Datos (los llena el docente) -->
 <section id="inicio" class="pantalla centrada activa">
   <div class="tarjeta">
     <a class="volver" href="index.html">← Volver al inicio</a>
     <img class="logo-ube" src="img/logo_ube.png" alt="Universidad Bolivariana del Ecuador">
-    <h1>EMSEO | Digital para escribir</h1>
-    <p class="sub">Las respuestas quedan escritas y se califican con 0, 1 o 2</p>
+    <h1>Digital para escribir</h1>
+    <p class="sub">Evaluación de Memoria Semántica mediante Evocación Oral (EMSEO)</p>
     <div class="campo"><label for="f-nombre">Estudiante:</label><input id="f-nombre" autocomplete="off" aria-describedby="err-inicio"></div>
     <div class="dos">
       <div class="campo"><label for="f-grado">Grado:</label><input id="f-grado" autocomplete="off"></div>
