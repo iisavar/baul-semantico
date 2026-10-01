@@ -51,6 +51,7 @@
       <button class="btn btn-grande" id="b-comenzar">Comenzar evaluación <span class="arr">&rarr;</span></button>
       <p class="error-msg" id="err-inicio" role="alert"></p>
       <p class="nota nota-retomar" id="nota-retomar" hidden></p>
+      <button class="enlace" id="b-respaldo" type="button">Descargar respaldo de todas las evaluaciones (Excel)</button>
     </div>
   </div>
 </section>
@@ -552,11 +553,11 @@ function pintarInforme(extra) {  // cabecera, puntaje, escala, barras y tabla re
 }
 
 // ---------------------------------------------------------------- Excel y cierre
-function nombreArchivo(d) {  // siempre con el nombre del estudiante en mayúsculas
+function nombreArchivo(d, extra = "") {  // siempre con el nombre del estudiante en mayúsculas
   const limpio = s => String(s || "").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim();
-  return `${limpio(d.nombre).toUpperCase() || "ESTUDIANTE"} - EMSEO ${fechaLarga(d.fecha).replace(/\//g, "-")}.xlsx`;
+  return `${limpio(d.nombre).toUpperCase() || "ESTUDIANTE"} - EMSEO${extra} ${fechaLarga(d.fecha).replace(/\//g, "-")}.xlsx`;
 }
-function descargarExcel() {
+function descargarExcel(sinCalificar = false) {
   const d = payload(), escrita = d.modalidad === "escrita", B = v => ({ v, negrita: true });
   const num = v => (v === null || v === undefined || v === "") ? "" : Number(v);
   const hora = d.inicio ? new Date(d.inicio).toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" }) : "";
@@ -570,20 +571,47 @@ function descargarExcel() {
     [B("Necesidades educativas especiales"), d.nee === "Sí" && d.nee_cual ? "Sí (" + d.nee_cual + ")" : d.nee],
     [B("Docente"), d.evaluador], [B("Fecha"), fechaLarga(d.fecha)], [B("Hora de inicio"), hora],
     [],
-    [B("Puntaje total (de 162)"), d.puntaje_total], [B("Puntaje sobre 100"), d.puntaje_100], [B("Nivel referencial"), d.nivel],
+    ...(sinCalificar ? [[B("Puntaje"), "Pendiente de calificar (respaldo de las respuestas del estudiante)"]]
+      : [[B("Puntaje total (de 162)"), d.puntaje_total], [B("Puntaje sobre 100"), d.puntaje_100], [B("Nivel referencial"), d.nivel]]),
     [],
     ["N.º", "Lámina", "Región", ...(escrita ? ["¿Qué es esto?", "¿A qué grupo pertenece?", "¿Qué sabe?"] : []),
       "Evocación", "Categorización", "Caracterización", "Total"].map(B),
     ...d.respuestas.map(r => [r.n, r.concepto, r.region, ...textos(r), num(r.a), num(r.b), num(r.c), (r.a || 0) + (r.b || 0) + (r.c || 0)]),
     [B("Total"), "", "", ...(escrita ? ["", "", ""] : []), ...["a", "b", "c"].map(k => d.respuestas.reduce((t, r) => t + (r[k] || 0), 0)), d.puntaje_total],
   ];
-  descargarXlsx(nombreArchivo(d), "Resultados", filas,
+  descargarXlsx(nombreArchivo(d, sinCalificar ? " (respuestas sin calificar)" : ""), "Resultados", filas,
     escrita ? [32, 18, 12, 26, 26, 36, 12, 15, 15, 8] : [32, 22, 12, 12, 15, 15, 8]);
-  estado.csv = true;
-  LOG("Descargó el Excel de resultados");
+  if (!sinCalificar) estado.csv = true;
+  LOG(sinCalificar ? "Descargó el Excel de respaldo (respuestas sin calificar)" : "Descargó el Excel de resultados");
   guardar();
   pintarBitacora();
 }
+function descargarRespaldo(claves) {  // un solo Excel con TODAS las evaluaciones guardadas en esta computadora
+  const todas = {};
+  const meter = e => { if (e && e.id && e.datos && e.datos.nombre) todas[e.id] = e; };
+  claves.forEach(k => { try { JSON.parse(localStorage.getItem(k) || "[]").forEach(meter); } catch (err) { /* nada */ } });
+  meter(cargar());
+  if (estado && estado.datos && estado.datos.nombre) meter(estado);
+  const lista = Object.values(todas).sort((a, b) => String(a.datos.inicio || "").localeCompare(String(b.datos.inicio || "")));
+  if (!lista.length) { alert("Todavía no hay evaluaciones guardadas en esta computadora."); return; }
+  const escrita = lista.some(e => e.resp), B = v => ({ v, negrita: true });
+  const num = v => (v === null || v === undefined) ? "" : Number(v);
+  const situacion = e => e.porCalificar ? "Por calificar" : e.puntos.every(completo) ? "Calificada" : "Incompleta";
+  const filas = [[B("Baúl Semántico | Respaldo de todas las evaluaciones de esta computadora")],
+    [`Descargado el ${new Date().toLocaleString("es-EC")} | ${lista.length} evaluaciones`], [],
+    ["Estudiante", "Grado", "Paralelo", "Edad", "Sexo", "Docente", "Fecha", "Situación", "N.º", "Lámina", "Región",
+      ...(escrita ? ["¿Qué es esto?", "¿A qué grupo pertenece?", "¿Qué sabe?"] : []), "Evocación", "Categorización", "Caracterización", "Total"].map(B)];
+  lista.forEach(e => CONCEPTOS.forEach((c, i) => {
+    const p = e.puntos[i] || {}, r = (e.resp || [])[i] || {}, d = e.datos;
+    filas.push([d.nombre, d.grado, d.paralelo, num(d.edad), d.sexo, d.evaluador, fechaLarga(d.fecha), situacion(e), c.n, c.nombre, REGIONES[c.region].nombre,
+      ...(escrita ? [(r.a || "").trim(), (r.b || "").trim(), [r.c1, r.c2, r.c3].map(x => (x || "").trim()).filter(Boolean).join(" | ")] : []),
+      num(p.a), num(p.b), num(p.c), (p.a || 0) + (p.b || 0) + (p.c || 0)]);
+  }));
+  const ahora = new Date(), dos = n => String(n).padStart(2, "0");
+  descargarXlsx(`RESPALDO EMSEO ${dos(ahora.getDate())}-${dos(ahora.getMonth() + 1)}-${ahora.getFullYear()} ${dos(ahora.getHours())}h${dos(ahora.getMinutes())}.xlsx`,
+    "Respaldo", filas, [26, 7, 9, 6, 11, 22, 11, 14, 5, 16, 10, ...(escrita ? [22, 22, 32] : []), 11, 14, 14, 7]);
+}
+
 function finalizar() {  // «Finalizar y guardar resultados»: muestra los resultados y descarga el Excel de una vez
   LOG("Finalizó y guardó los resultados");
   mostrarResultados();
@@ -645,6 +673,7 @@ $("b-bitacora").onclick = () => {
 };
 
 $("b-csv").onclick = () => descargarExcel();
+$("b-respaldo").onclick = () => descargarRespaldo(["emseo-archivo"]);
 
 $("b-imprimir").onclick = () => window.print();
 window.addEventListener("beforeprint", () => {  // al imprimir se abre el detalle por concepto (no el historial)
