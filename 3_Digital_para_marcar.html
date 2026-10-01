@@ -80,7 +80,7 @@
   .filas { max-width: 980px; margin: 0 auto; }
   .fila { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; padding: 4px 0; }
   .fila + .fila { border-top: 1px dashed var(--linea); }
-  .preg b { display: inline-block; min-width: 140px; }
+  .preg b { display: inline-block; min-width: 24px; }
   .preg span { color: var(--gris); }
   .puntos { display: flex; gap: 8px; }
   .punto {
@@ -118,7 +118,7 @@
     .campo { grid-template-columns: 1fr; }
     .campo label { text-align: left; }
     .dos { grid-template-columns: 1fr; }
-    .preg b { min-width: 0; display: block; }
+    .preg b { min-width: 0; }
     .preg span { font-size: 14px; }
     .punto { width: 44px; }
     .grande, .niveles { grid-template-columns: 1fr; }
@@ -464,6 +464,7 @@ function hoyISO() {
 }
 
 
+const textoFalta = nums => nums.length === 1 ? `Falta marcar la pregunta ${nums[0]}` : `Falta marcar las preguntas ${nums.slice(0, -1).join(", ")} y ${nums[nums.length - 1]}`;
 // ---------------------------------------------------------------- utilidades de diseño (revisión de 10 especialistas)
 const TEXTO_REGION = { "Costa": "#1a1a1a" };  // el dorado de la Costa necesita texto oscuro para leerse
 function ponerRegion(r) {
@@ -650,15 +651,15 @@ function pintarFilas(n) {
   const p = estado.puntos[n - 1];
   $("filas").innerHTML = SECCIONES.map((s, i) => `
     <div class="fila ${i === filaActiva ? "activa-fila" : ""}">
-      <div class="preg"><b>${s.nombre}</b> <span>${s.pregunta}</span></div>
+      <div class="preg"><b>${i + 1}.</b> ${s.pregunta}</div>
       <div class="puntos">
         ${[0, 1, 2].map(v => `<button class="punto ${p[s.clave] === v ? "sel" : ""}"
             data-clave="${s.clave}" data-v="${v}" aria-label="${s.nombre}: ${v}">${v}</button>`).join("")}
       </div>
     </div>`).join("");
   $("b-sig").disabled = !completo(p);
-  const faltan = SECCIONES.filter(s => p[s.clave] == null).map(s => s.nombre);
-  $("falta").textContent = faltan.length ? "Falta marcar: " + faltan.join(", ") : "";
+  const faltan = SECCIONES.map((s, i) => p[s.clave] == null ? i + 1 : 0).filter(Boolean);
+  $("falta").textContent = faltan.length ? textoFalta(faltan) : "";
   $("b-ant").disabled = estado.paso === 0;
 }
 

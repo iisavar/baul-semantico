@@ -280,6 +280,9 @@
   .dato > input:focus, .dato > select:focus { outline: none; border-bottom: 2px solid var(--tinta); }
   .dato .falta-dato { border-bottom: 2px solid var(--error, #9C2B2B) !important; }
   @media (max-width: 400px) { .form-grid { gap: 10px 14px; } }
+  /* número de pregunta: solo lo ve el docente (el estudiante ve la pregunta sola) */
+  .num-preg { color: var(--gris); }
+  body[data-escribe="estudiante"] .num-preg { display: none; }
 </style>
 </head>
 <body>
@@ -375,13 +378,13 @@
   <div class="lienzo">
     <div class="marco"><img id="l-foto" alt="Foto de la lámina"><div class="pestana" id="l-num">1</div></div>
     <div class="respuestas">
-      <label for="r-a"><span class="solo-estudiante">¿Qué es esto?</span><span class="solo-docente">Evocación | ¿Qué es esto?</span></label>
+      <label for="r-a"><span class="num-preg">1.</span> ¿Qué es esto?</label>
       <input id="r-a" autocomplete="off" spellcheck="false">
       <div class="pts solo-docente" data-clave="a"></div>
-      <label for="r-b"><span class="solo-estudiante">¿A qué grupo pertenece?</span><span class="solo-docente">Categorización | ¿A qué grupo pertenece?</span></label>
+      <label for="r-b"><span class="num-preg">2.</span> ¿A qué grupo pertenece?</label>
       <input id="r-b" autocomplete="off" spellcheck="false">
       <div class="pts solo-docente" data-clave="b"></div>
-      <label><span class="solo-estudiante">Cuéntame, ¿qué sabes de esto? <span class="ayuda">(una, dos o tres cosas)</span></span><span class="solo-docente">Caracterización | Cuéntame, ¿qué sabes de esto?</span></label>
+      <label><span class="num-preg">3.</span> Cuéntame, ¿qué sabes de esto? <span class="ayuda">(una, dos o tres cosas)</span></label>
       <div class="tres">
         <span>1.</span><input id="r-c1" autocomplete="off" spellcheck="false" aria-label="Primera cosa">
         <span>2.</span><input id="r-c2" autocomplete="off" spellcheck="false" aria-label="Segunda cosa">
@@ -558,6 +561,7 @@ const tresCosas = r => [r.c1, r.c2, r.c3].map(x => x.trim()).filter(Boolean);
 function hoyISO() { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
 
 
+const textoFalta = nums => nums.length === 1 ? `Falta marcar la pregunta ${nums[0]}` : `Falta marcar las preguntas ${nums.slice(0, -1).join(", ")} y ${nums[nums.length - 1]}`;
 // ---------------------------------------------------------------- utilidades de diseño (revisión de 10 especialistas)
 const TEXTO_REGION = { "Costa": "#1a1a1a" };  // el dorado de la Costa necesita texto oscuro para leerse
 function ponerRegion(r) {
@@ -813,8 +817,8 @@ function pintarPuntos(n) {
       `<button class="punto ${p[d.dataset.clave] === v ? "sel" : ""}" data-v="${v}">${v}</button>`).join("");
   });
   $("b-sig").disabled = doc && !completo(p);  // el docente debe marcar las tres antes de seguir
-  const faltan = ["a", "b", "c"].filter(k => p[k] == null).map(k => NOMBRE_SECCION[k]);
-  $("falta").textContent = doc && faltan.length ? "Falta marcar: " + faltan.join(", ") : "";
+  const faltan = ["a", "b", "c"].map((k, i) => p[k] == null ? i + 1 : 0).filter(Boolean);
+  $("falta").textContent = doc && faltan.length ? textoFalta(faltan) : "";
 }
 document.querySelectorAll(".pts").forEach(d => d.addEventListener("click", e => {
   const b = e.target.closest(".punto");
@@ -858,7 +862,7 @@ function irACalificar(i) {
   const p = estado.puntos[n - 1];
   $("c-filas").innerHTML = SECCIONES.map(s => `
     <div class="fila">
-      <div class="cab"><b>${s.nombre} | ${s.pregunta}</b>
+      <div class="cab"><b>${["a", "b", "c"].indexOf(s.clave) + 1}. ${s.pregunta}</b>
         <div class="puntos">${[0, 1, 2].map(v =>
           `<button class="punto ${p[s.clave] === v ? "sel" : ""}" data-clave="${s.clave}" data-v="${v}">${v}</button>`).join("")}</div>
       </div>
