@@ -262,6 +262,7 @@ body[data-escribe="estudiante"] .falta { display: none; }
 .mx td:first-child i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; background: var(--c); margin-right: 8px; }
 .mx tr.total td { border-top: 2px solid var(--ink); font-weight: 700; color: var(--ink); }
 .mx td.txt { text-align: left; font-weight: 400; color: var(--ink); min-width: 120px; }
+.mx th.txt { text-align: left; }
 details.card { padding: 0; }
 details.card summary { cursor: pointer; padding: 18px 24px; font-size: 15px; font-weight: 700; list-style: none; display: flex; justify-content: space-between; }
 details.card summary::-webkit-details-marker { display: none; }
