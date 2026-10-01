@@ -509,7 +509,7 @@ function irAPaso(i) {
   $("b-ant").disabled = estado.paso === 0;
   pintarPuntos(n);
   mostrar("lamina");
-  setTimeout(() => $("r-a").focus(), 50);
+  $("r-a").focus();  // el cursor queda listo en la primera respuesta
 }
 function guardarRespuestas() {
   const paso = PASOS[estado.paso];
