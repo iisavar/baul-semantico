@@ -232,17 +232,13 @@
     .acciones-fin .btn { width: 100%; }
   }
 
-  /* datos de la muestra: se marcan con un toque */
-  .muestra { margin: 6px 0 4px; }
-  .fila-dato { display: grid; grid-template-columns: 150px minmax(0, 1fr); align-items: center; gap: 10px; margin: 10px 0; }
-  .fila-dato .etq { text-align: right; line-height: 1.2; }
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-  .chips button { border: 1px solid var(--linea); background: #fff; border-radius: 18px; padding: 6px 14px; font-size: 16px; min-height: 36px; }
-  .chips button.sel { background: #e4e4e4; border: 2px solid #595959; font-weight: bold; }
-  .chips input { width: 90px; border: 0; border-bottom: 1px solid var(--gris); padding: 4px 2px; font: inherit; background: transparent; }
-  .chips input#f-nee-cual { width: 190px; }
-  .muestra.error .chips:not(.ok) button { border-color: var(--error, #9C2B2B); }
-  @media (max-width: 640px) { .fila-dato { grid-template-columns: 1fr; gap: 4px; } .fila-dato .etq { text-align: left; } }
+  /* datos de la muestra: listas desplegables; «Otra» abre una casilla para escribir cuál */
+  .con-otra { display: flex; gap: 10px; align-items: flex-end; min-width: 0; }
+  .con-otra select { flex: 1 1 0; min-width: 0; font: inherit; padding: 6px 2px; border: 0; border-bottom: 1px solid var(--gris);
+    background: transparent; color: var(--tinta); cursor: pointer; }
+  .con-otra select:focus { outline: none; border-bottom: 2px solid var(--tinta); }
+  .con-otra input { flex: 1 1 0; min-width: 0; font: inherit; padding: 6px 2px; border: 0; border-bottom: 1px solid var(--gris); background: transparent; }
+  .con-otra .falta-dato, .con-otra input.falta-dato { border-bottom: 2px solid var(--error, #9C2B2B); }
 
   /* formularios largos: centrados, pero sin cortarse arriba cuando no caben */
   #inicio, .centrada { justify-content: flex-start; }
@@ -267,18 +263,20 @@
     <div class="campo"><label for="f-docente">Docente:</label><input id="f-docente" autocomplete="off"></div>
     <div class="campo"><label for="f-fecha">Fecha:</label><input id="f-fecha" type="date"></div>
     <div class="muestra" id="muestra">
-      <div class="fila-dato"><span class="etq">Edad:</span>
-        <div class="chips" data-campo="edad"><button type="button" data-v="8">8</button><button type="button" data-v="9">9</button><button type="button" data-v="10">10</button><button type="button" data-v="11">11</button><button type="button" data-v="otra">Otra</button>
-          <input id="f-edad-otra" type="number" min="4" max="17" placeholder="años" aria-label="Otra edad" hidden></div></div>
-      <div class="fila-dato"><span class="etq">Sexo:</span>
-        <div class="chips" data-campo="sexo"><button type="button" data-v="Hombre">Hombre</button><button type="button" data-v="Mujer">Mujer</button></div></div>
-      <div class="fila-dato"><span class="etq">Lengua materna:</span>
-        <div class="chips" data-campo="lengua"><button type="button" data-v="Español">Español</button><button type="button" data-v="Kichwa">Kichwa</button><button type="button" data-v="Otra">Otra</button></div></div>
-      <div class="fila-dato"><span class="etq">Origen de la familia:</span>
-        <div class="chips" data-campo="region_origen"><button type="button" data-v="Costa">Costa</button><button type="button" data-v="Sierra">Sierra</button><button type="button" data-v="Amazonía">Amazonía</button><button type="button" data-v="Insular">Insular</button></div></div>
-      <div class="fila-dato"><span class="etq">Necesidades especiales:</span>
-        <div class="chips" data-campo="nee"><button type="button" data-v="No">No</button><button type="button" data-v="Sí">Sí</button>
-          <input id="f-nee-cual" placeholder="¿Cuál? (opcional)" aria-label="Cuál necesidad educativa especial" hidden></div></div>
+      <div class="campo"><label for="f-edad">Edad:</label>
+        <div class="con-otra"><select id="f-edad"><option value="">Seleccione…</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option value="otra">Otra</option></select>
+          <input id="f-edad-otra" type="number" min="4" max="17" placeholder="¿Cuántos años?" aria-label="Otra edad" hidden></div></div>
+      <div class="campo"><label for="f-sexo">Sexo:</label>
+        <div class="con-otra"><select id="f-sexo"><option value="">Seleccione…</option><option>Hombre</option><option>Mujer</option></select></div></div>
+      <div class="campo"><label for="f-lengua">Lengua materna:</label>
+        <div class="con-otra"><select id="f-lengua"><option value="">Seleccione…</option><option>Español</option><option>Kichwa</option><option value="otra">Otra</option></select>
+          <input id="f-lengua-otra" placeholder="¿Cuál?" aria-label="Otra lengua" hidden></div></div>
+      <div class="campo"><label for="f-origen">Origen de la familia:</label>
+        <div class="con-otra"><select id="f-origen"><option value="">Seleccione…</option><option>Costa</option><option>Sierra</option><option>Amazonía</option><option>Insular</option><option value="otra">Otro país</option></select>
+          <input id="f-origen-otra" placeholder="¿Cuál?" aria-label="Otro país" hidden></div></div>
+      <div class="campo"><label for="f-nee">Necesidades especiales:</label>
+        <div class="con-otra"><select id="f-nee"><option value="">Seleccione…</option><option>No</option><option value="otra">Sí</option></select>
+          <input id="f-nee-otra" placeholder="¿Cuál? (opcional)" aria-label="Cuál necesidad especial" hidden></div></div>
     </div>
     <div class="centro">
       <button class="btn" id="b-comenzar">Comenzar</button>
@@ -503,39 +501,46 @@ function fechaCorta(t) {
 }
 
 
-// ---------------------------------------------------------------- datos de la muestra (un toque por dato)
-let muestra = {};
-document.querySelectorAll("#muestra .chips").forEach(g => g.addEventListener("click", e => {
-  const b = e.target.closest("button");
-  if (!b) return;
-  const campo = g.dataset.campo;
-  muestra[campo] = b.dataset.v;
-  g.classList.add("ok");
-  g.querySelectorAll("button").forEach(x => { x.classList.toggle("sel", x === b); x.setAttribute("aria-pressed", x === b); });
-  if (campo === "edad") { $("f-edad-otra").hidden = b.dataset.v !== "otra"; if (b.dataset.v === "otra") $("f-edad-otra").focus(); }
-  if (campo === "nee") $("f-nee-cual").hidden = b.dataset.v !== "Sí";
-}));
-const NOMBRE_DATO = { edad: "Edad", sexo: "Sexo", lengua: "Lengua materna", region_origen: "Región de origen", nee: "Necesidades especiales" };
+// ---------------------------------------------------------------- datos de la muestra (listas desplegables)
+// Si se elige «Otra», «Otro país» o «Sí», aparece al lado una casilla para escribir cuál.
+const DESPLEGABLES = { edad: "f-edad", sexo: "f-sexo", lengua: "f-lengua", origen: "f-origen", nee: "f-nee" };
+Object.values(DESPLEGABLES).forEach(id => {
+  const sel = $(id), otra = $(id + "-otra");
+  sel.addEventListener("change", () => {
+    sel.classList.remove("falta-dato");
+    if (!otra) return;
+    otra.hidden = sel.value !== "otra";
+    if (!otra.hidden) otra.focus();
+  });
+});
+const NOMBRE_DATO = { edad: "Edad", sexo: "Sexo", lengua: "Lengua materna", origen: "Origen de la familia", nee: "Necesidades especiales" };
 function leerMuestra() {
+  const v = id => $(id).value, txt = id => ($(id) ? $(id).value.trim() : "");
   const datos = {
-    edad: muestra.edad === "otra" ? $("f-edad-otra").value.trim() : (muestra.edad || ""),
-    sexo: muestra.sexo || "", lengua: muestra.lengua || "", region_origen: muestra.region_origen || "",
-    nee: muestra.nee || "", nee_cual: muestra.nee === "Sí" ? $("f-nee-cual").value.trim() : "",
+    edad: v("f-edad") === "otra" ? txt("f-edad-otra") : v("f-edad"),
+    sexo: v("f-sexo"),
+    lengua: v("f-lengua") === "otra" ? (txt("f-lengua-otra") ? "Otra (" + txt("f-lengua-otra") + ")" : "") : v("f-lengua"),
+    region_origen: v("f-origen") === "otra" ? (txt("f-origen-otra") ? "Otro país (" + txt("f-origen-otra") + ")" : "") : v("f-origen"),
+    nee: v("f-nee") === "otra" ? "Sí" : v("f-nee"),
+    nee_cual: v("f-nee") === "otra" ? txt("f-nee-otra") : "",
     institucion: $("f-inst").value.trim(),
   };
-  const faltan = Object.keys(NOMBRE_DATO).filter(k => !datos[k]).map(k => NOMBRE_DATO[k]);
-  $("muestra").classList.toggle("error", faltan.length > 0);
+  const claves = { edad: "edad", sexo: "sexo", lengua: "lengua", origen: "region_origen", nee: "nee" };
+  const faltan = [];
+  Object.entries(DESPLEGABLES).forEach(([k, id]) => {
+    const vacio = !datos[claves[k]];
+    $(id).classList.toggle("falta-dato", vacio && !$(id).value);
+    if ($(id + "-otra")) $(id + "-otra").classList.toggle("falta-dato", vacio && $(id).value === "otra");
+    if (vacio) faltan.push(NOMBRE_DATO[k]);
+  });
   return { datos, faltan };
 }
 function limpiarMuestra() {  // la institución se conserva; los datos del niño se limpian
-  muestra = {};
-  document.querySelectorAll("#muestra .chips").forEach(g => {
-    g.classList.remove("ok");
-    g.querySelectorAll("button").forEach(x => { x.classList.remove("sel"); x.setAttribute("aria-pressed", "false"); });
+  Object.values(DESPLEGABLES).forEach(id => {
+    $(id).value = ""; $(id).classList.remove("falta-dato");
+    const otra = $(id + "-otra");
+    if (otra) { otra.value = ""; otra.hidden = true; otra.classList.remove("falta-dato"); }
   });
-  $("f-edad-otra").value = ""; $("f-edad-otra").hidden = true;
-  $("f-nee-cual").value = ""; $("f-nee-cual").hidden = true;
-  $("muestra").classList.remove("error");
 }
 try { $("f-inst").value = localStorage.getItem("emseo-institucion") || ""; } catch (e) { /* nada */ }
 
