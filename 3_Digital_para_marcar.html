@@ -243,6 +243,17 @@
   /* formularios largos: centrados, pero sin cortarse arriba cuando no caben */
   #inicio, .centrada { justify-content: flex-start; }
   #inicio > .tarjeta, .centrada > .tarjeta { margin-top: auto; margin-bottom: auto; }
+
+  /* formulario compacto en dos columnas */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 22px; margin: 6px 0 4px; text-align: left; }
+  .form-grid .ancho { grid-column: 1 / -1; }
+  .dato label { display: block; font-size: 14px; color: var(--gris); margin-bottom: 2px; }
+  .dato > input, .dato > select { width: 100%; min-width: 0; font: inherit; padding: 6px 2px; border: 0;
+    border-bottom: 1px solid var(--gris); background: transparent; color: var(--tinta); }
+  .dato > select { cursor: pointer; }
+  .dato > input:focus, .dato > select:focus { outline: none; border-bottom: 2px solid var(--tinta); }
+  .dato .falta-dato { border-bottom: 2px solid var(--error, #9C2B2B) !important; }
+  @media (max-width: 400px) { .form-grid { gap: 10px 14px; } }
 </style>
 </head>
 <body>
@@ -254,29 +265,23 @@
     <img class="logo-ube" src="img/logo_ube.png" alt="Universidad Bolivariana del Ecuador">
     <h1>Digital para marcar</h1>
     <p class="sub">Evaluación de Memoria Semántica mediante Evocación Oral (EMSEO)</p>
-    <div class="campo"><label for="f-nombre">Estudiante:</label><input id="f-nombre" autocomplete="off" aria-describedby="err-inicio"></div>
-    <div class="campo"><label for="f-inst">Institución:</label><input id="f-inst" autocomplete="off"></div>
-    <div class="dos">
-      <div class="campo"><label for="f-grado">Grado:</label><input id="f-grado" autocomplete="off"></div>
-      <div class="campo"><label for="f-paralelo">Paralelo:</label><input id="f-paralelo" autocomplete="off"></div>
-    </div>
-    <div class="campo"><label for="f-docente">Docente:</label><input id="f-docente" autocomplete="off"></div>
-    <div class="campo"><label for="f-fecha">Fecha:</label><input id="f-fecha" type="date"></div>
-    <div class="muestra" id="muestra">
-      <div class="campo"><label for="f-edad">Edad:</label>
-        <div class="con-otra"><select id="f-edad"><option value="">Seleccione…</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option value="otra">Otra</option></select>
-          <input id="f-edad-otra" type="number" min="4" max="17" placeholder="¿Cuántos años?" aria-label="Otra edad" hidden></div></div>
-      <div class="campo"><label for="f-sexo">Sexo:</label>
-        <div class="con-otra"><select id="f-sexo"><option value="">Seleccione…</option><option>Hombre</option><option>Mujer</option></select></div></div>
-      <div class="campo"><label for="f-lengua">Lengua materna:</label>
+    <div class="form-grid" id="muestra">
+      <div class="dato ancho"><label for="f-nombre">Estudiante</label><input id="f-nombre" autocomplete="off" aria-describedby="err-inicio"></div>
+      <div class="dato ancho"><label for="f-docente">Docente</label><input id="f-docente" autocomplete="off"></div>
+      <div class="dato"><label for="f-grado">Grado</label><select id="f-grado"><option value="">Seleccione…</option><option>5.º</option><option>6.º</option><option>7.º</option></select></div>
+      <div class="dato"><label for="f-paralelo">Paralelo</label><select id="f-paralelo"><option value="">Seleccione…</option><option>A</option><option>B</option><option>C</option></select></div>
+      <div class="dato"><label for="f-edad">Edad</label><select id="f-edad"><option value="">Seleccione…</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option></select></div>
+      <div class="dato"><label for="f-sexo">Sexo</label><select id="f-sexo"><option value="">Seleccione…</option><option>Masculino</option><option>Femenino</option></select></div>
+      <div class="dato"><label for="f-lengua">Lengua materna</label>
         <div class="con-otra"><select id="f-lengua"><option value="">Seleccione…</option><option>Español</option><option>Kichwa</option><option value="otra">Otra</option></select>
           <input id="f-lengua-otra" placeholder="¿Cuál?" aria-label="Otra lengua" hidden></div></div>
-      <div class="campo"><label for="f-origen">Origen de la familia:</label>
+      <div class="dato"><label for="f-origen">Origen de la familia</label>
         <div class="con-otra"><select id="f-origen"><option value="">Seleccione…</option><option>Costa</option><option>Sierra</option><option>Amazonía</option><option>Insular</option><option value="otra">Otro país</option></select>
           <input id="f-origen-otra" placeholder="¿Cuál?" aria-label="Otro país" hidden></div></div>
-      <div class="campo"><label for="f-nee">Necesidades especiales:</label>
+      <div class="dato ancho"><label for="f-nee">Necesidades educativas especiales</label>
         <div class="con-otra"><select id="f-nee"><option value="">Seleccione…</option><option>No</option><option value="otra">Sí</option></select>
           <input id="f-nee-otra" placeholder="¿Cuál? (opcional)" aria-label="Cuál necesidad especial" hidden></div></div>
+      <input id="f-fecha" type="hidden">
     </div>
     <div class="centro">
       <button class="btn" id="b-comenzar">Comenzar</button>
@@ -503,7 +508,7 @@ function fechaCorta(t) {
 
 // ---------------------------------------------------------------- datos de la muestra (listas desplegables)
 // Si se elige «Otra», «Otro país» o «Sí», aparece al lado una casilla para escribir cuál.
-const DESPLEGABLES = { edad: "f-edad", sexo: "f-sexo", lengua: "f-lengua", origen: "f-origen", nee: "f-nee" };
+const DESPLEGABLES = { grado: "f-grado", paralelo: "f-paralelo", edad: "f-edad", sexo: "f-sexo", lengua: "f-lengua", origen: "f-origen", nee: "f-nee" };
 Object.values(DESPLEGABLES).forEach(id => {
   const sel = $(id), otra = $(id + "-otra");
   sel.addEventListener("change", () => {
@@ -513,19 +518,20 @@ Object.values(DESPLEGABLES).forEach(id => {
     if (!otra.hidden) otra.focus();
   });
 });
-const NOMBRE_DATO = { edad: "Edad", sexo: "Sexo", lengua: "Lengua materna", origen: "Origen de la familia", nee: "Necesidades especiales" };
+const NOMBRE_DATO = { grado: "Grado", paralelo: "Paralelo", edad: "Edad", sexo: "Sexo", lengua: "Lengua materna", origen: "Origen de la familia", nee: "Necesidades especiales" };
 function leerMuestra() {
   const v = id => $(id).value, txt = id => ($(id) ? $(id).value.trim() : "");
   const datos = {
-    edad: v("f-edad") === "otra" ? txt("f-edad-otra") : v("f-edad"),
+    grado: v("f-grado"), paralelo: v("f-paralelo"),
+    edad: v("f-edad"),
     sexo: v("f-sexo"),
     lengua: v("f-lengua") === "otra" ? (txt("f-lengua-otra") ? "Otra (" + txt("f-lengua-otra") + ")" : "") : v("f-lengua"),
     region_origen: v("f-origen") === "otra" ? (txt("f-origen-otra") ? "Otro país (" + txt("f-origen-otra") + ")" : "") : v("f-origen"),
     nee: v("f-nee") === "otra" ? "Sí" : v("f-nee"),
     nee_cual: v("f-nee") === "otra" ? txt("f-nee-otra") : "",
-    institucion: $("f-inst").value.trim(),
+    inicio: new Date().toISOString(),  // fecha y hora exactas: se registran solas (no se piden)
   };
-  const claves = { edad: "edad", sexo: "sexo", lengua: "lengua", origen: "region_origen", nee: "nee" };
+  const claves = { grado: "grado", paralelo: "paralelo", edad: "edad", sexo: "sexo", lengua: "lengua", origen: "region_origen", nee: "nee" };
   const faltan = [];
   Object.entries(DESPLEGABLES).forEach(([k, id]) => {
     const vacio = !datos[claves[k]];
@@ -536,13 +542,12 @@ function leerMuestra() {
   return { datos, faltan };
 }
 function limpiarMuestra() {  // la institución se conserva; los datos del niño se limpian
-  Object.values(DESPLEGABLES).forEach(id => {
+  Object.values(DESPLEGABLES).filter(id => id !== "f-grado" && id !== "f-paralelo").forEach(id => {
     $(id).value = ""; $(id).classList.remove("falta-dato");
     const otra = $(id + "-otra");
     if (otra) { otra.value = ""; otra.hidden = true; otra.classList.remove("falta-dato"); }
   });
 }
-try { $("f-inst").value = localStorage.getItem("emseo-institucion") || ""; } catch (e) { /* nada */ }
 
 // ---------------------------------------------------------------- registro y envío en vivo
 const sync = crearSync({ url: SHEET_URL, estado: () => estado, guardar, foto: payload, indicador: "sync" });
@@ -580,7 +585,6 @@ $("b-comenzar").onclick = () => {
   $("err-inicio").textContent = ""; $("f-nombre").removeAttribute("aria-invalid"); $("f-nombre").style.borderBottomColor = "";
   const m = leerMuestra();
   if (m.faltan.length) { $("err-inicio").textContent = "Marque: " + m.faltan.join(", ") + "."; return; }
-  try { localStorage.setItem("emseo-institucion", m.datos.institucion); } catch (e) { /* nada */ }
   const pendiente = cargar();
   if (pendiente && pendiente.datos && pendiente.datos.nombre && !pendiente.enviado && !pendiente.csv &&
       !confirm("Hay una evaluación guardada de " + iniciales(pendiente.datos.nombre) + " que no se descargó ni envió. " +
@@ -792,9 +796,9 @@ $("b-bitacora").onclick = () => {
 
 $("b-csv").onclick = () => {
   const d = payload();
-  const enc = ["estudiante", "grado", "paralelo", "docente", "fecha", "edad", "sexo", "institucion", "lengua_materna", "region_origen", "nee", "nee_cual", "n", "concepto", "region", "evocacion", "categorizacion", "caracterizacion", "total_concepto"];
+  const enc = ["estudiante", "grado", "paralelo", "docente", "fecha", "hora_inicio", "edad", "sexo", "lengua_materna", "region_origen", "nee", "nee_cual", "n", "concepto", "region", "evocacion", "categorizacion", "caracterizacion", "total_concepto"];
   const esc = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
-  const filas = d.respuestas.map(r => [d.nombre, d.grado, d.paralelo, d.evaluador, d.fecha, d.edad, d.sexo, d.institucion, d.lengua, d.region_origen, d.nee, d.nee_cual, r.n, r.concepto, r.region, r.a, r.b, r.c,
+  const filas = d.respuestas.map(r => [d.nombre, d.grado, d.paralelo, d.evaluador, d.fecha, d.inicio ? new Date(d.inicio).toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" }) : "", d.edad, d.sexo, d.lengua, d.region_origen, d.nee, d.nee_cual, r.n, r.concepto, r.region, r.a, r.b, r.c,
     (r.a || 0) + (r.b || 0) + (r.c || 0)].map(esc).join(";"));
   filas.push(["", "", "", "", "", "", "", "", "", "", "", "", "", "TOTAL", "", "", "", "", d.puntaje_total].map(esc).join(";"));
   filas.push(["", "", "", "", "", "", "", "", "", "", "", "", "", "SOBRE 100", "", "", "", "", d.puntaje_100].map(esc).join(";"));
