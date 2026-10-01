@@ -44,7 +44,7 @@
    * filas: arreglos de celdas; cada celda es texto, número, vacío o { v, negrita: true }
    * anchos: ancho de cada columna (en caracteres)
    */
-  window.descargarXlsx = function (archivo, hoja, filas, anchos = []) {
+  window.crearXlsx = function (hoja, filas, anchos = []) {
     const cuerpo = filas.map((f, r) => `<row r="${r + 1}">` + f.map((c, i) => {
       if (c === null || c === undefined || c === "") return "";
       const v = typeof c === "object" ? c.v : c, s = typeof c === "object" && c.negrita ? ' s="1"' : "";
@@ -78,12 +78,91 @@
         '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs></styleSheet>' },
       { nombre: "xl/worksheets/sheet1.xml", texto: CAB + `<worksheet xmlns="${NS}/spreadsheetml/2006/main">${cols}<sheetData>${cuerpo}</sheetData></worksheet>` },
     ]);
+    return libro;
+  };
+
+  function bajar(blob, archivo) {  // descarga normal (va a la carpeta Descargas)
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(libro);
+    a.href = URL.createObjectURL(blob);
     a.download = archivo;
     document.body.appendChild(a);
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  }
+
+  // ------------------------------------------------------------ carpeta en la computadora del docente
+  // Chrome y Edge (computadora) permiten guardar en una carpeta elegida por el docente. La carpeta se
+  // recuerda en este navegador; en cada visita el navegador puede pedir «Permitir» una vez.
+  const NOMBRE_CARPETA = "Baúl Semántico - Resultados";
+  const soporta = "showDirectoryPicker" in window;
+  function idb(modo, valor) {
+    return new Promise(res => {
+      try {
+        const r = indexedDB.open("emseo-carpeta", 1);
+        r.onupgradeneeded = () => r.result.createObjectStore("datos");
+        r.onerror = () => res(null);
+        r.onsuccess = () => {
+          const tx = r.result.transaction("datos", modo === "poner" ? "readwrite" : "readonly"), st = tx.objectStore("datos");
+          const q = modo === "poner" ? st.put(valor, "carpeta") : st.get("carpeta");
+          q.onsuccess = () => res(modo === "poner" ? true : q.result || null);
+          q.onerror = () => res(null);
+        };
+      } catch (e) { res(null); }
+    });
+  }
+  async function carpeta(pedir) {
+    if (!soporta) return null;
+    const h = await idb("leer");
+    if (!h) return null;
+    try {
+      if (await h.queryPermission({ mode: "readwrite" }) === "granted") return h;
+      if (pedir && await h.requestPermission({ mode: "readwrite" }) === "granted") return h;
+    } catch (e) { /* sin gesto del usuario: se usa la descarga normal */ }
+    return null;
+  }
+  window.estadoCarpeta = async function () {
+    if (!soporta) return { estado: "no" };
+    const h = await idb("leer");
+    if (!h) return { estado: "sin" };
+    let p = "prompt";
+    try { p = await h.queryPermission({ mode: "readwrite" }); } catch (e) { /* nada */ }
+    return { estado: p === "granted" ? "ok" : "permiso", nombre: h.name };
+  };
+  window.elegirCarpeta = async function () {
+    const base = await window.showDirectoryPicker({ id: "emseo", mode: "readwrite", startIn: "documents" });
+    const h = base.name === NOMBRE_CARPETA ? base : await base.getDirectoryHandle(NOMBRE_CARPETA, { create: true });
+    await idb("poner", h);
+    return h;
+  };
+  window.permitirCarpeta = () => carpeta(true);
+  /** Guarda en la carpeta (en la subcarpeta indicada) o, si no hay carpeta, descarga. soloCarpeta: no descargar. */
+  window.guardarArchivo = async function (archivo, blob, sub, soloCarpeta = false) {
+    try {
+      const h = await carpeta(!soloCarpeta);
+      if (h) {
+        let d = h;
+        for (const parte of (sub ? sub.split("/") : [])) d = await d.getDirectoryHandle(parte, { create: true });
+        const f = await d.getFileHandle(archivo, { create: true });
+        const w = await f.createWritable();
+        await w.write(blob);
+        await w.close();
+        return "carpeta";
+      }
+    } catch (e) { /* si falla, se descarga */ }
+    if (soloCarpeta) return "nada";
+    bajar(blob, archivo);
+    return "descarga";
+  };
+  window.descargarXlsx = (archivo, hoja, filas, anchos = [], sub = "", soloCarpeta = false) =>
+    window.guardarArchivo(archivo, window.crearXlsx(hoja, filas, anchos), sub, soloCarpeta);
+
+  window.aviso = function (texto) {  // mensaje breve abajo de la pantalla
+    let el = document.getElementById("aviso");
+    if (!el) { el = document.createElement("div"); el.id = "aviso"; el.setAttribute("role", "status"); document.body.appendChild(el); }
+    el.textContent = texto;
+    el.classList.add("ver");
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove("ver"), 4500);
   };
 })();

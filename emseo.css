@@ -370,3 +370,12 @@ details.card > div { padding: 0 24px 20px; }
 .enlace { display: block; margin: 16px auto 0; background: none; border: 0; padding: 4px; font: 600 13.5px var(--sans); color: var(--ink-2);
   text-decoration: underline; text-underline-offset: 3px; }
 .enlace:hover { color: var(--ink); }
+.carpeta { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 18px;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; font-size: 13.5px; color: var(--ink-2); }
+.carpeta[data-estado="ok"] #carpeta-txt::before { content: "\2713  "; color: var(--ok); font-weight: 700; }
+.carpeta .enlace { display: inline; margin: 0; }
+#aviso { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); background: var(--ink); color: #fff; padding: 12px 18px;
+  border-radius: 10px; font-size: 14px; font-weight: 600; box-shadow: 0 8px 24px rgba(16,24,40,.25); opacity: 0; pointer-events: none;
+  transition: opacity .2s, transform .2s; z-index: 50; max-width: calc(100vw - 32px); text-align: center; }
+#aviso.ver { opacity: 1; transform: translate(-50%, 0); }
+@media print { #aviso { display: none; } }

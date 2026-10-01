@@ -58,6 +58,7 @@
       <button class="btn btn-grande" id="b-comenzar">Comenzar evaluación <span class="arr">&rarr;</span></button>
       <p class="error-msg" id="err-inicio" role="alert"></p>
       <p class="nota nota-retomar" id="nota-retomar" hidden></p>
+      <div class="carpeta" id="carpeta" hidden><span id="carpeta-txt"></span><button class="enlace" id="b-carpeta" type="button"></button></div>
       <button class="enlace" id="b-respaldo" type="button">Descargar respaldo de todas las evaluaciones (Excel)</button>
       <div class="pendientes" id="pendientes" hidden>
         <p class="pend-tit">Por calificar (<span id="pend-n">0</span>)</p>
@@ -452,6 +453,7 @@ function aplicarModo() {
   const doc = estado.escribe === "docente";
 }
 $("b-comenzar").onclick = () => {
+  if ($("carpeta").dataset.estado === "permiso") permitirCarpeta().then(pintarCarpeta);  // el navegador pide «Permitir» una vez por visita
   const nombre = $("f-nombre").value.trim();
   if (!nombre) {
     $("f-nombre").focus(); $("f-nombre").classList.add("falta-dato"); $("f-nombre").setAttribute("aria-invalid", "true");
@@ -805,20 +807,23 @@ function descargarExcel(sinCalificar = false) {
     [B("Total"), "", "", ...(escrita ? ["", "", ""] : []), ...["a", "b", "c"].map(k => d.respuestas.reduce((t, r) => t + (r[k] || 0), 0)), d.puntaje_total],
   ];
   descargarXlsx(nombreArchivo(d, sinCalificar ? " (respuestas sin calificar)" : ""), "Resultados", filas,
-    escrita ? [32, 18, 12, 26, 26, 36, 12, 15, 15, 8] : [32, 22, 12, 12, 15, 15, 8]);
+    escrita ? [32, 18, 12, 26, 26, 36, 12, 15, 15, 8] : [32, 22, 12, 12, 15, 15, 8],
+    sinCalificar ? APP + "/Respuestas sin calificar" : APP)
+    .then(donde => { if (donde === "carpeta") aviso("Guardado en la carpeta «Baúl Semántico - Resultados»."); });
+  actualizarResumen();
   if (!sinCalificar) estado.csv = true;
   LOG(sinCalificar ? "Descargó el Excel de respaldo (respuestas sin calificar)" : "Descargó el Excel de resultados");
   guardar();
   pintarBitacora();
 }
-function descargarRespaldo(claves) {  // un solo Excel con TODAS las evaluaciones guardadas en esta computadora
+function descargarRespaldo(claves, soloCarpeta = false) {  // un solo Excel con TODAS las evaluaciones guardadas en esta computadora
   const todas = {};
   const meter = e => { if (e && e.id && e.datos && e.datos.nombre) todas[e.id] = e; };
   claves.forEach(k => { try { JSON.parse(localStorage.getItem(k) || "[]").forEach(meter); } catch (err) { /* nada */ } });
   meter(cargar());
   if (estado && estado.datos && estado.datos.nombre) meter(estado);
   const lista = Object.values(todas).sort((a, b) => String(a.datos.inicio || "").localeCompare(String(b.datos.inicio || "")));
-  if (!lista.length) { alert("Todavía no hay evaluaciones guardadas en esta computadora."); return; }
+  if (!lista.length) { if (!soloCarpeta) alert("Todavía no hay evaluaciones guardadas en esta computadora."); return; }
   const escrita = lista.some(e => e.resp), B = v => ({ v, negrita: true });
   const num = v => (v === null || v === undefined) ? "" : Number(v);
   const situacion = e => e.porCalificar ? "Por calificar" : e.puntos.every(completo) ? "Calificada" : "Incompleta";
@@ -833,10 +838,22 @@ function descargarRespaldo(claves) {  // un solo Excel con TODAS las evaluacione
       num(p.a), num(p.b), num(p.c), (p.a || 0) + (p.b || 0) + (p.c || 0)]);
   }));
   const ahora = new Date(), dos = n => String(n).padStart(2, "0");
+  const anchos = [26, 7, 9, 6, 11, 22, 11, 14, 5, 16, 10, ...(escrita ? [22, 22, 32] : []), 11, 14, 14, 7];
+  if (soloCarpeta) return descargarXlsx(`TODAS LAS EVALUACIONES - ${APP}.xlsx`, "Todas", filas, anchos, "", true);
   descargarXlsx(`RESPALDO EMSEO ${dos(ahora.getDate())}-${dos(ahora.getMonth() + 1)}-${ahora.getFullYear()} ${dos(ahora.getHours())}h${dos(ahora.getMinutes())}.xlsx`,
-    "Respaldo", filas, [26, 7, 9, 6, 11, 22, 11, 14, 5, 16, 10, ...(escrita ? [22, 22, 32] : []), 11, 14, 14, 7]);
+    "Respaldo", filas, anchos, "Respaldos").then(donde => { if (donde === "carpeta") aviso("Respaldo guardado en la carpeta «Baúl Semántico - Resultados»."); });
 }
 
+const APP = "Digital para escribir", CLAVES_RESPALDO = ["emseo-archivo-escrita", "emseo-por-calificar"];
+function actualizarResumen() { setTimeout(() => descargarRespaldo(CLAVES_RESPALDO, true), 400); }  // solo si hay carpeta elegida
+async function pintarCarpeta() {
+  const e = await estadoCarpeta();
+  $("carpeta").hidden = e.estado === "no";
+  $("carpeta").dataset.estado = e.estado;
+  if (e.estado === "sin") { $("carpeta-txt").textContent = "Guardar todos los Excel en una carpeta de esta computadora"; $("b-carpeta").textContent = "Elegir carpeta"; }
+  else if (e.estado === "permiso") { $("carpeta-txt").textContent = `Carpeta «${e.nombre}»`; $("b-carpeta").textContent = "Permitir guardar"; }
+  else if (e.estado === "ok") { $("carpeta-txt").textContent = `Todo se guarda en la carpeta «${e.nombre}»`; $("b-carpeta").textContent = "Cambiar"; }
+}
 function finalizar() {  // «Finalizar y guardar resultados»: muestra los resultados y descarga el Excel de una vez
   LOG("Finalizó y guardó los resultados");
   mostrarResultados();
@@ -893,7 +910,15 @@ $("b-bitacora").onclick = () => {
   pintarBitacora();
 };
 $("b-csv").onclick = () => descargarExcel();
-$("b-respaldo").onclick = () => descargarRespaldo(["emseo-archivo-escrita", "emseo-por-calificar"]);
+$("b-respaldo").onclick = () => descargarRespaldo(CLAVES_RESPALDO);
+$("b-carpeta").onclick = async () => {
+  try {
+    if ($("carpeta").dataset.estado === "permiso") await permitirCarpeta();
+    else { await elegirCarpeta(); aviso("Listo: los Excel se guardarán en la carpeta «Baúl Semántico - Resultados»."); actualizarResumen(); }
+  } catch (err) { /* el docente canceló */ }
+  pintarCarpeta();
+};
+pintarCarpeta();
 $("b-imprimir").onclick = () => window.print();
 window.addEventListener("beforeprint", () => {  // al imprimir se abre el detalle por concepto (no el historial)
   document.querySelectorAll("#resultados details:not(.registro)").forEach(d => { d.open = true; });
