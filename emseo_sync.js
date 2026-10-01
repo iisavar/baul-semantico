@@ -132,16 +132,8 @@ function crearSync({ url, estado, guardar, foto, indicador }) {
   return {
     registrar,
     encolar,
-    enConCola: () => leerCola().length,
     enviar,                       // fuerza el envío; devuelve true si todo quedó confirmado
     pendientes: () => pendientes().length,
     refrescar: estadoIndicador,
-    csv() {                       // bitácora completa en CSV (para respaldo o anexos)
-      const e = asegurar();
-      const enc = ["n_orden", "fecha_hora", "accion", "n", "concepto", "pregunta", "antes", "despues", "detalle"];
-      const q = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
-      const filas = e.bitacora.map(x => [x.seq, x.t, x.accion, x.n, x.concepto, x.pregunta, x.antes, x.despues, x.detalle].map(q).join(";"));
-      return "﻿" + [enc.join(";"), ...filas].join("\r\n");
-    },
   };
 }

@@ -51,8 +51,6 @@
       <button class="btn btn-grande" id="b-comenzar">Comenzar evaluación <span class="arr">&rarr;</span></button>
       <p class="error-msg" id="err-inicio" role="alert"></p>
       <p class="nota nota-retomar" id="nota-retomar" hidden></p>
-      <div class="carpeta" id="carpeta" hidden><span id="carpeta-txt"></span><button class="enlace" id="b-carpeta" type="button"></button></div>
-      <button class="enlace" id="b-respaldo" type="button">Descargar respaldo de todas las evaluaciones (Excel)</button>
     </div>
   </div>
 </section>
@@ -103,11 +101,9 @@
       <div class="g" id="r-g"></div>
       <dl class="dl" id="r-dl"></dl>
       <div class="acciones">
-        <button class="btn" id="b-csv">Descargar resultados (Excel)</button>
         <button class="btn sec" id="b-enviar" hidden>Confirmar envío</button>
         <button class="btn sec" id="b-imprimir">Imprimir</button>
         <button class="btn sec" id="b-revisar">Revisar respuestas</button>
-        <button class="btn sec" id="b-bitacora" hidden>Descargar historial de cambios</button>
         <button class="btn btn-fin" id="b-nuevo">Siguiente estudiante <span class="arr">&rarr;</span></button>
       </div>
       <p class="nota" id="r-estado"></p>
@@ -144,13 +140,6 @@
           <tbody id="r-detalle"></tbody>
         </table></div>
       </details>
-      <details class="card registro" hidden>
-        <summary id="r-bit-titulo">Historial de cambios</summary>
-        <div class="tabla-scroll"><table class="mx bitacora">
-          <thead><tr><th>Hora</th><th>Acción</th><th>Lámina</th><th>Pregunta</th><th>Antes</th><th>Después</th></tr></thead>
-          <tbody id="r-bitacora"></tbody>
-        </table></div>
-      </details>
       <div class="firma"><span>Firma del docente</span><span>Fecha</span></div>
     </div>
   </div>
@@ -159,7 +148,6 @@
 <span class="sync" id="sync" hidden></span>
 
 <script src="emseo_sync.js"></script>
-<script src="emseo_excel.js"></script>
 <script>
 // ---------------------------------------------------------------- configuración
 // URL del Apps Script (Implementar → Aplicación web). Vacía = no se envía nada.
@@ -242,7 +230,7 @@ function hoyISO() {
 
 
 const textoFalta = nums => nums.length === 1 ? `Falta marcar la pregunta ${nums[0]}` : `Falta marcar las preguntas ${nums.slice(0, -1).join(", ")} y ${nums[nums.length - 1]}`;
-// ---------------------------------------------------------------- utilidades de diseño (revisión de 10 especialistas)
+// ---------------------------------------------------------------- fotos
 function ponerFoto(img, src) {  // la foto queda oculta hasta que carga: nunca se ve la anterior con el número nuevo
   const marco = img.parentElement;
   const aviso = marco.querySelector(".aviso-foto");
@@ -257,7 +245,7 @@ function ponerFoto(img, src) {  // la foto queda oculta hasta que carga: nunca s
   };
   img.src = src;
 }
-function precargarFotos(destino) {  // descarga las 28 fotos al empezar y avisa si alguna falla
+function precargarFotos(destino) {  // descarga las 27 fotos al empezar y avisa si alguna falla
   let listas = 0, fallas = 0;
   const total = 27, el = document.getElementById(destino);
   const pintar = () => {
@@ -349,7 +337,6 @@ if (previo && previo.datos && previo.datos.nombre) {
 }
 
 $("b-comenzar").onclick = () => {
-  if ($("carpeta").dataset.estado === "permiso") permitirCarpeta().then(pintarCarpeta);  // el navegador pide «Permitir» una vez por visita
   const nombre = $("f-nombre").value.trim();
   if (!nombre) {
     $("f-nombre").focus(); $("f-nombre").classList.add("falta-dato"); $("f-nombre").setAttribute("aria-invalid", "true");
@@ -360,8 +347,8 @@ $("b-comenzar").onclick = () => {
   const m = leerMuestra();
   if (m.faltan.length) { $("err-inicio").textContent = "Marque: " + m.faltan.join(", ") + "."; return; }
   const pendiente = cargar();
-  if (pendiente && pendiente.datos && pendiente.datos.nombre && !pendiente.enviado && !pendiente.csv &&
-      !confirm("Hay una evaluación guardada de " + iniciales(pendiente.datos.nombre) + " que no se descargó ni envió. " +
+  if (pendiente && pendiente.datos && pendiente.datos.nombre && !pendiente.enviado &&
+      !confirm("Hay una evaluación guardada de " + iniciales(pendiente.datos.nombre) + " que no se terminó. " +
                "Se guardará en el archivo de esta computadora antes de empezar con el nuevo estudiante. ¿Continuar?")) return;
   if (pendiente && pendiente.datos && pendiente.datos.nombre) { encolarDe(pendiente); archivar(pendiente); }  // nunca se borra sin guardar
   estado = nuevoEstado();
@@ -371,7 +358,7 @@ $("b-comenzar").onclick = () => {
   };
   guardar();
   LOG("Inicio de la evaluación", { detalle: [estado.datos.grado, estado.datos.paralelo].filter(Boolean).join(" ") });
-  precargarFotos("carga");
+  precargarFotos();
   irAPaso(0);
 };
 
@@ -417,7 +404,7 @@ function pintarFilas(n) {
       <div class="seg">${botonesPunto(s.clave, p[s.clave], s.nombre)}</div>
     </div>`).join("");
   $("b-sig").disabled = !completo(p);
-  $("b-sig").innerHTML = (estado.paso === PASOS.length - 1 ? "Finalizar y guardar resultados" : "Siguiente") + ' <span class="arr">&rarr;</span>';
+  $("b-sig").innerHTML = (estado.paso === PASOS.length - 1 ? "Finalizar evaluación" : "Siguiente") + ' <span class="arr">&rarr;</span>';
   const faltan = SECCIONES.map((s, i) => p[s.clave] == null ? i + 1 : 0).filter(Boolean);
   $("falta").textContent = faltan.length ? textoFalta(faltan) : "";
   $("b-ant").disabled = estado.paso === 0;
@@ -485,7 +472,7 @@ function payload() {
 }
 
 
-// ---------------------------------------------------------------- diseño (propuesta 02 + mezcla de los jueces)
+// ---------------------------------------------------------------- pantallas
 const CLAVE_REG = ["costa", "sierra", "amazonia", "insular"];
 function ponerRegion(r) {
   const k = CLAVE_REG[REGIONES.indexOf(r)];
@@ -554,85 +541,10 @@ function pintarInforme(extra) {  // cabecera, puntaje, escala, barras y tabla re
   return { total, p100, nivel };
 }
 
-// ---------------------------------------------------------------- Excel y cierre
-function nombreArchivo(d, extra = "") {  // siempre con el nombre del estudiante en mayúsculas
-  const limpio = s => String(s || "").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim();
-  return `${limpio(d.nombre).toUpperCase() || "ESTUDIANTE"} - EMSEO${extra} ${fechaLarga(d.fecha).replace(/\//g, "-")}.xlsx`;
-}
-function descargarExcel(sinCalificar = false) {
-  const d = payload(), escrita = d.modalidad === "escrita", B = v => ({ v, negrita: true });
-  const num = v => (v === null || v === undefined || v === "") ? "" : Number(v);
-  const hora = d.inicio ? new Date(d.inicio).toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" }) : "";
-  const textos = r => escrita ? [r.a_cita, r.b_cita, r.c_cita] : [];
-  const filas = [
-    [B("Baúl Semántico | Evaluación de Memoria Semántica mediante Evocación Oral (EMSEO)")],
-    [escrita ? "Digital para escribir | " + (d.escribe === "docente" ? "escribió el docente" : "escribió el estudiante") : "Digital para marcar"],
-    [],
-    [B("Estudiante"), d.nombre], [B("Grado"), d.grado], [B("Paralelo"), d.paralelo], [B("Edad"), num(d.edad)], [B("Sexo"), d.sexo],
-    [B("Lengua materna"), d.lengua], [B("Origen de la familia"), d.region_origen],
-    [B("Necesidades educativas especiales"), d.nee === "Sí" && d.nee_cual ? "Sí (" + d.nee_cual + ")" : d.nee],
-    [B("Docente"), d.evaluador], [B("Fecha"), fechaLarga(d.fecha)], [B("Hora de inicio"), hora],
-    [],
-    ...(sinCalificar ? [[B("Puntaje"), "Pendiente de calificar (respaldo de las respuestas del estudiante)"]]
-      : [[B("Puntaje total (de 162)"), d.puntaje_total], [B("Puntaje sobre 100"), d.puntaje_100], [B("Nivel referencial"), d.nivel]]),
-    [],
-    ["N.º", "Lámina", "Región", ...(escrita ? ["¿Qué es esto?", "¿A qué grupo pertenece?", "¿Qué sabe?"] : []),
-      "Evocación", "Categorización", "Caracterización", "Total"].map(B),
-    ...d.respuestas.map(r => [r.n, r.concepto, r.region, ...textos(r), num(r.a), num(r.b), num(r.c), (r.a || 0) + (r.b || 0) + (r.c || 0)]),
-    [B("Total"), "", "", ...(escrita ? ["", "", ""] : []), ...["a", "b", "c"].map(k => d.respuestas.reduce((t, r) => t + (r[k] || 0), 0)), d.puntaje_total],
-  ];
-  descargarXlsx(nombreArchivo(d, sinCalificar ? " (respuestas sin calificar)" : ""), "Resultados", filas,
-    escrita ? [32, 18, 12, 26, 26, 36, 12, 15, 15, 8] : [32, 22, 12, 12, 15, 15, 8],
-    sinCalificar ? APP + "/Respuestas sin calificar" : APP)
-    .then(donde => { if (donde === "carpeta") aviso("Guardado en la carpeta «Baúl Semántico - Resultados»."); });
-  actualizarResumen();
-  if (!sinCalificar) estado.csv = true;
-  LOG(sinCalificar ? "Descargó el Excel de respaldo (respuestas sin calificar)" : "Descargó el Excel de resultados");
-  guardar();
-  pintarBitacora();
-}
-function descargarRespaldo(claves, soloCarpeta = false) {  // un solo Excel con TODAS las evaluaciones guardadas en esta computadora
-  const todas = {};
-  const meter = e => { if (e && e.id && e.datos && e.datos.nombre) todas[e.id] = e; };
-  claves.forEach(k => { try { JSON.parse(localStorage.getItem(k) || "[]").forEach(meter); } catch (err) { /* nada */ } });
-  meter(cargar());
-  if (estado && estado.datos && estado.datos.nombre) meter(estado);
-  const lista = Object.values(todas).sort((a, b) => String(a.datos.inicio || "").localeCompare(String(b.datos.inicio || "")));
-  if (!lista.length) { if (!soloCarpeta) alert("Todavía no hay evaluaciones guardadas en esta computadora."); return; }
-  const escrita = lista.some(e => e.resp), B = v => ({ v, negrita: true });
-  const num = v => (v === null || v === undefined) ? "" : Number(v);
-  const situacion = e => e.porCalificar ? "Por calificar" : e.puntos.every(completo) ? "Calificada" : "Incompleta";
-  const filas = [[B("Baúl Semántico | Respaldo de todas las evaluaciones de esta computadora")],
-    [`Descargado el ${new Date().toLocaleString("es-EC")} | ${lista.length} evaluaciones`], [],
-    ["Estudiante", "Grado", "Paralelo", "Edad", "Sexo", "Docente", "Fecha", "Situación", "N.º", "Lámina", "Región",
-      ...(escrita ? ["¿Qué es esto?", "¿A qué grupo pertenece?", "¿Qué sabe?"] : []), "Evocación", "Categorización", "Caracterización", "Total"].map(B)];
-  lista.forEach(e => CONCEPTOS.forEach((c, i) => {
-    const p = e.puntos[i] || {}, r = (e.resp || [])[i] || {}, d = e.datos;
-    filas.push([d.nombre, d.grado, d.paralelo, num(d.edad), d.sexo, d.evaluador, fechaLarga(d.fecha), situacion(e), c.n, c.nombre, REGIONES[c.region].nombre,
-      ...(escrita ? [(r.a || "").trim(), (r.b || "").trim(), [r.c1, r.c2, r.c3].map(x => (x || "").trim()).filter(Boolean).join(" | ")] : []),
-      num(p.a), num(p.b), num(p.c), (p.a || 0) + (p.b || 0) + (p.c || 0)]);
-  }));
-  const ahora = new Date(), dos = n => String(n).padStart(2, "0");
-  const anchos = [26, 7, 9, 6, 11, 22, 11, 14, 5, 16, 10, ...(escrita ? [22, 22, 32] : []), 11, 14, 14, 7];
-  if (soloCarpeta) return descargarXlsx(`TODAS LAS EVALUACIONES - ${APP}.xlsx`, "Todas", filas, anchos, "", true);
-  descargarXlsx(`RESPALDO EMSEO ${dos(ahora.getDate())}-${dos(ahora.getMonth() + 1)}-${ahora.getFullYear()} ${dos(ahora.getHours())}h${dos(ahora.getMinutes())}.xlsx`,
-    "Respaldo", filas, anchos, "Respaldos").then(donde => { if (donde === "carpeta") aviso("Respaldo guardado en la carpeta «Baúl Semántico - Resultados»."); });
-}
-
-const APP = "Digital para marcar", CLAVES_RESPALDO = ["emseo-archivo"];
-function actualizarResumen() { setTimeout(() => descargarRespaldo(CLAVES_RESPALDO, true), 400); }  // solo si hay carpeta elegida
-async function pintarCarpeta() {
-  const e = await estadoCarpeta();
-  $("carpeta").hidden = e.estado === "no";
-  $("carpeta").dataset.estado = e.estado;
-  if (e.estado === "sin") { $("carpeta-txt").textContent = "Guardar todos los Excel en una carpeta de esta computadora"; $("b-carpeta").textContent = "Elegir carpeta"; }
-  else if (e.estado === "permiso") { $("carpeta-txt").textContent = `Carpeta «${e.nombre}»`; $("b-carpeta").textContent = "Permitir guardar"; }
-  else if (e.estado === "ok") { $("carpeta-txt").textContent = `Todo se guarda en la carpeta «${e.nombre}»`; $("b-carpeta").textContent = "Cambiar"; }
-}
-function finalizar() {  // «Finalizar y guardar resultados»: muestra los resultados y descarga el Excel de una vez
-  LOG("Finalizó y guardó los resultados");
+// ---------------------------------------------------------------- cierre
+function finalizar() {  // «Finalizar evaluación»: los resultados ya están guardados (navegador y Google Sheets)
+  LOG("Finalizó la evaluación");
   mostrarResultados();
-  descargarExcel();
 }
 function encolarDe(e) {  // deja en la cola de envío lo pendiente de otra evaluación (sin internet no se pierde)
   const antes = estado; estado = e; sync.encolar(); estado = antes;
@@ -649,7 +561,6 @@ function mostrarResultados() {
   const resumen = `PT ${total}/162 | ${p100}/100 | ${nivel}`;
   if (!estado.terminada) { estado.terminada = true; LOG("Terminó la evaluación", { detalle: resumen }); }
   else LOG("Vio los resultados", { detalle: resumen });
-  pintarBitacora();
 
   $("b-enviar").hidden = !SHEET_URL;  // sin conexión configurada no se muestra
   $("r-estado").textContent = SHEET_URL ? "Los resultados se guardan en línea mientras evalúa. «Confirmar envío» revisa que todo haya llegado."
@@ -657,13 +568,6 @@ function mostrarResultados() {
   mostrar("resultados");
 }
 
-function pintarBitacora() {
-  const b = estado.bitacora || [];
-  const hora = t => new Date(t).toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-  $("r-bit-titulo").textContent = `Historial de cambios (${b.length} acciones)`;
-  $("r-bitacora").innerHTML = b.map(x => `<tr><td>${hora(x.t)}</td><td>${esc(x.accion)}</td><td>${x.n ? x.n + " | " + esc(x.concepto) : ""}</td>
-    <td>${esc(x.pregunta)}</td><td>${esc(x.antes)}</td><td>${esc(x.despues || x.detalle || "")}</td></tr>`).join("");
-}
 
 $("b-enviar").onclick = async () => {
   $("b-enviar").disabled = true;
@@ -673,32 +577,12 @@ $("b-enviar").onclick = async () => {
   const ok = await sync.enviar();
   estado.enviado = ok;
   guardar();
-  pintarBitacora();
   $("r-estado").textContent = ok ? "Todo llegó y quedó guardado en línea. ✔"
     : "No se pudo confirmar el envío (¿sin internet?). Se reintentará solo; mientras tanto descargue los resultados.";
   $("b-enviar").disabled = false;
 };
 
-$("b-bitacora").onclick = () => {
-  LOG("Descargó el registro de cambios");
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([sync.csv()], { type: "text/csv;charset=utf-8" }));
-  a.download = `EMSEO_registro_${(estado.datos.nombre || "estudiante").replace(/\s+/g, "_")}_${estado.datos.fecha}.csv`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-  pintarBitacora();
-};
 
-$("b-csv").onclick = () => descargarExcel();
-$("b-respaldo").onclick = () => descargarRespaldo(CLAVES_RESPALDO);
-$("b-carpeta").onclick = async () => {
-  try {
-    if ($("carpeta").dataset.estado === "permiso") await permitirCarpeta();
-    else { await elegirCarpeta(); aviso("Listo: los Excel se guardarán en la carpeta «Baúl Semántico - Resultados»."); actualizarResumen(); }
-  } catch (err) { /* el docente canceló */ }
-  pintarCarpeta();
-};
-pintarCarpeta();
 
 $("b-imprimir").onclick = () => window.print();
 window.addEventListener("beforeprint", () => {  // al imprimir se abre el detalle por concepto (no el historial)
@@ -708,11 +592,9 @@ window.addEventListener("beforeprint", () => {  // al imprimir se abre el detall
 window.addEventListener("afterprint", () => { document.title = "Baúl Semántico | Digital para marcar"; });
 $("b-revisar").onclick = () => { LOG("Volvió a revisar las respuestas"); irAPaso(1); };
 $("b-nuevo").onclick = () => {
-  const enNube = SHEET_URL && sync.pendientes() === 0;
-  const aviso = enNube || estado.csv
-    ? "¿Empezar con un nuevo estudiante? Esta evaluación queda guardada en el registro."
-    : "Estos resultados todavía NO están en Google Sheets ni en Excel. Quedarán en el archivo de esta compu, " +
-      "pero conviene descargar el Excel primero. ¿Empezar con un nuevo estudiante?";
+  const aviso = !SHEET_URL || sync.pendientes() === 0
+    ? "¿Empezar con un nuevo estudiante? Esta evaluación queda guardada."
+    : "Hay cambios que todavía no llegan a Google Sheets (¿sin internet?). Se enviarán solos cuando vuelva la conexión. ¿Empezar con un nuevo estudiante?";
   if (!confirm(aviso)) return;
   LOG("Cerró la evaluación (nuevo estudiante)");
   sync.encolar();
