@@ -279,9 +279,9 @@
       <p>¿Quién escribe las respuestas?</p>
       <div class="ops">
         <button class="opcion" data-escribe="docente" aria-pressed="false"><b>El docente</b>
-          <small>El estudiante responde en voz alta; el docente escribe lo que dijo y marca 0, 1 o 2 en el momento.</small></button>
+          <small>El estudiante responde en voz alta</small></button>
         <button class="opcion" data-escribe="estudiante" aria-pressed="false"><b>El estudiante</b>
-          <small>El estudiante escribe sus respuestas en la computadora; el docente califica al final.</small></button>
+          <small>El estudiante escribe en la computadora</small></button>
       </div>
     </div>
     <div class="centro"><button class="btn" id="b-comenzar">Comenzar</button>
@@ -402,7 +402,6 @@
       <span class="contador" id="c-contador">1 / 27</span>
       <button class="btn" id="c-sig" disabled>Siguiente →</button>
     </div>
-    <p class="falta solo-pc" id="c-falta" aria-live="polite">Atajos: 0, 1, 2 para marcar | Enter para seguir</p>
   </div>
 </section>
 
@@ -613,7 +612,7 @@ function aplicarModo() {
   document.body.dataset.escribe = estado.escribe || "estudiante";
   const doc = estado.escribe === "docente";
   $("ej-titulo").innerHTML = doc
-    ? "<b>Ejemplo de práctica | no se califica.</b> Muestre la foto y haga las tres preguntas:"
+    ? "<b>Ejemplo de práctica</b> (no se califica)"
     : "<b>Mira este ejemplo.</b> Así se responde:";
   $("b-ejemplo").textContent = doc ? "Empezar la evaluación →" : "¡Ahora tú! →";
 }
