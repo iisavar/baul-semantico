@@ -192,6 +192,45 @@
   .error-msg:not(:empty)::before { content: "⚠ "; }
   @media print { .logo-ube { height: 14mm; } }
   @media (max-width: 640px) { h1 { font-size: 26px; } .sub { font-size: 15px; } }
+
+  /* ===== Celular y tablet ===== */
+  :root { --foto-w: min(640px, calc(100vw - 32px), calc((100vh - 300px) * 4 / 3)); }
+  @supports (height: 100dvh) { :root { --foto-w: min(640px, calc(100vw - 32px), calc((100dvh - 300px) * 4 / 3)); } }
+  .tabla-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .l-corto { display: none; }
+  @media (hover: none) { .solo-pc { display: none !important; } }   /* atajos de teclado: solo en computadora */
+  @media (max-width: 640px) {
+    :root { --foto-w: calc(100vw - 32px); }
+    /* el indicador de guardado se vuelve un puntito de color en la esquina (no tapa nada) */
+    .sync { font-size: 0; width: 14px; height: 14px; padding: 0; border-radius: 50%; top: 8px; right: 8px;
+      background: #9a9a9a; border: 2px solid #fff; box-shadow: 0 0 0 1px #9a9a9a; }
+    .sync[data-tipo="ok"] { background: #2E6B1F; box-shadow: 0 0 0 1px #2E6B1F; }
+    .sync[data-tipo="pendiente"] { background: #C08A00; box-shadow: 0 0 0 1px #C08A00; }
+    /* navegación: botones en una fila y la barra de progreso debajo, a todo el ancho */
+    .nav { flex-wrap: wrap; gap: 8px; }
+    .nav .btn { white-space: nowrap; padding: 11px 16px; }
+    .nav .progreso { order: 3; flex: 1 1 100%; }
+    .contador { min-width: 0; }
+    .escenario { padding: 44px 12px 8px; }
+    .docente { padding: 8px 12px 10px; }
+    .lienzo, .cal { padding: 40px 16px 16px; gap: 16px; }
+    .pestana { font-size: 18px; min-width: 52px; padding: 4px 8px; }
+    #portada { padding-top: 28px; }
+    .banda { letter-spacing: .14em; padding: 14px 8px; }
+    /* resultados compactos */
+    #resultados { padding: 20px 12px; }
+    .grande { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .grande div { padding: 10px 12px; }
+    .grande strong { font-size: 24px; }
+    .niveles { grid-template-columns: repeat(5, 1fr); gap: 4px; }
+    .niveles div { font-size: 11px; padding: 6px 2px; }
+    table { font-size: 14px; }
+    th, td { padding: 5px 4px; }
+    .l-largo { display: none; }
+    .l-corto { display: inline; }
+    .acciones .btn { flex: 1 1 100%; }
+    .acciones-fin .btn { width: 100%; }
+  }
 </style>
 </head>
 <body>
@@ -215,8 +254,8 @@
       <p class="error-msg" id="err-inicio" role="alert"></p>
     </div>
     <p class="nota" id="nota-retomar" hidden></p>
-    <p class="nota">Muestre cada foto al estudiante, haga las tres preguntas en voz alta y marque 0, 1 o 2 según la rúbrica impresa.<br>
-      Atajos: teclas <b>0</b>, <b>1</b>, <b>2</b> para marcar | <b>Enter</b> o <b>→</b> para avanzar | <b>←</b> para volver.</p>
+    <p class="nota">Muestre cada foto al estudiante, haga las tres preguntas en voz alta y marque 0, 1 o 2 según la rúbrica impresa.<span class="solo-pc"><br>
+      Atajos: teclas <b>0</b>, <b>1</b>, <b>2</b> para marcar | <b>Enter</b> o <b>→</b> para avanzar | <b>←</b> para volver.</span></p>
   </div>
 </section>
 
@@ -285,23 +324,23 @@
     </div>
     <div class="niveles" id="r-niveles"></div>
     <p class="nivel-frase" id="r-nivel"></p>
-    <table>
-      <thead><tr><th>Región</th><th>Evocación</th><th>Categorización</th><th>Caracterización</th><th>Total</th></tr></thead>
+    <div class="tabla-scroll"><table>
+      <thead><tr><th>Región</th><th><span class="l-largo">Evocación</span><span class="l-corto">Evoc.</span></th><th><span class="l-largo">Categorización</span><span class="l-corto">Categ.</span></th><th><span class="l-largo">Caracterización</span><span class="l-corto">Caract.</span></th><th>Total</th></tr></thead>
       <tbody id="r-tabla"></tbody>
-    </table>
+    </table></div>
     <details>
       <summary>Ver puntaje de cada concepto</summary>
-      <table>
-        <thead><tr><th>N.º | Concepto</th><th>Evocación</th><th>Categorización</th><th>Caracterización</th><th>Total</th></tr></thead>
+      <div class="tabla-scroll"><table>
+        <thead><tr><th>N.º | Concepto</th><th><span class="l-largo">Evocación</span><span class="l-corto">Evoc.</span></th><th><span class="l-largo">Categorización</span><span class="l-corto">Categ.</span></th><th><span class="l-largo">Caracterización</span><span class="l-corto">Caract.</span></th><th>Total</th></tr></thead>
         <tbody id="r-detalle"></tbody>
-      </table>
+      </table></div>
     </details>
     <details class="registro">
       <summary id="r-bit-titulo">Historial de cambios</summary>
-      <table class="bitacora">
+      <div class="tabla-scroll"><table class="bitacora">
         <thead><tr><th>Hora</th><th>Acción</th><th>Concepto</th><th>Pregunta</th><th>Antes</th><th>Después</th></tr></thead>
         <tbody id="r-bitacora"></tbody>
-      </table>
+      </table></div>
     </details>
     <div class="firma"><span>Firma del docente</span><span>Fecha</span></div>
     <div class="acciones">
@@ -650,7 +689,7 @@ function mostrarResultados() {
 function pintarBitacora() {
   const b = estado.bitacora || [];
   const hora = t => new Date(t).toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-  $("r-bit-titulo").textContent = `Registro de cambios (${b.length} acciones)`;
+  $("r-bit-titulo").textContent = `Historial de cambios (${b.length} acciones)`;
   $("r-bitacora").innerHTML = b.map(x => `<tr><td>${hora(x.t)}</td><td>${x.accion}</td><td>${x.n ? x.n + " | " + x.concepto : ""}</td>
     <td>${x.pregunta}</td><td>${x.antes}</td><td>${x.despues || x.detalle || ""}</td></tr>`).join("");
 }
