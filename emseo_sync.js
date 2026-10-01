@@ -33,10 +33,10 @@ function crearSync({ url, estado, guardar, foto, indicador }) {
 
   function estadoIndicador() {
     const p = pendientes().length;
-    if (!url) return pintar("● Guardado solo en esta compu (Google Sheets sin configurar)", "local");
-    if (!navigator.onLine) return pintar(`○ Sin internet · ${p} cambio(s) por enviar`, "pendiente");
-    if (p) return pintar(`○ Enviando ${p} cambio(s)…`, "pendiente");
-    pintar("● Sincronizado con Google Sheets", "ok");
+    if (!url) return pintar("● Guardado en esta computadora", "local");
+    if (!navigator.onLine) return pintar(`○ Sin internet | ${p} ${p === 1 ? "cambio" : "cambios"} por enviar`, "pendiente");
+    if (p) return pintar("○ Guardando en línea…", "pendiente");
+    pintar("● Guardado en línea", "ok");
   }
 
   /** Registra una acción. info: { n, concepto, pregunta, antes, despues, detalle } */

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>EMSEO · Aplicación digital</title>
+<title>EMSEO | Digital para marcar</title>
 <style>
   :root {
     --tinta: #1a1a1a;
@@ -134,17 +134,67 @@
     .acciones, details summary { display: none; }
     #resultados { height: auto; }
   }
+
+  /* ===== Mejoras de diseño (revisión de 10 especialistas, 30/09/2026) ===== */
+  :root { --linea: #9a9a9a; --region-texto: #fff;
+          --foto-w: min(640px, 92vw, calc((100vh - 300px) * 4 / 3)); }
+  @supports (height: 100dvh) { :root { --foto-w: min(640px, 92vw, calc((100dvh - 300px) * 4 / 3)); } }
+  body { font-size: 18px; }
+  .franja { position: fixed; top: 0; left: 0; right: 0; height: 4px; z-index: 6;
+    background: linear-gradient(90deg, var(--costa) 0 25%, var(--sierra) 25% 50%, var(--amazonia) 50% 75%, var(--insular) 75%); }
+  .sync { left: auto; right: 12px; top: 10px; bottom: auto; font-size: 13px; }
+  body.vista-nino .sync { display: none; }
+  .banda, .pestana { color: var(--region-texto); }
+  .marco { width: var(--foto-w); height: auto; max-width: 100%; }
+  .marco img { aspect-ratio: 4 / 3; height: auto; }
+  .marco img.cargando { visibility: hidden; }
+  .aviso-foto { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    text-align: center; color: #7A4A12; padding: 24px; font-size: 18px; }
+  .punto.sel { background: #e4e4e4; color: var(--tinta); border: 2px solid #595959; font-weight: bold; }
+  .btn:disabled { opacity: .55; }
+  :focus-visible { outline: 3px solid #3F7A8C; outline-offset: 2px; }
+  .falta { max-width: 980px; margin: 4px auto 0; text-align: right; font-size: 14px; color: #7A4A12; min-height: 18px; }
+  .error-msg { color: #9C2B2B; font-size: 15px; text-align: center; margin: 10px 0 0; }
+  .volver { display: inline-block; margin-bottom: 10px; color: var(--gris); font-size: 15px; text-decoration: none; }
+  .volver:hover { text-decoration: underline; }
+  .carga { font-size: 14px; color: var(--gris); margin-top: 6px; }
+  /* pantalla «Evaluación terminada» (antes de los resultados, para que el estudiante no los vea) */
+  #terminado { flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; background: var(--panel); }
+  #terminado h1 { font-size: 40px; margin-bottom: 6px; }
+  #terminado p { font-size: 22px; margin: 6px 0; }
+  .solo-doc { margin-top: 48px; font-size: 15px; padding: 8px 18px; }
+  /* resultados */
+  .niveles div.es { background: #ededed; color: var(--tinta); border: 2px solid var(--tinta); font-weight: bold; }
+  .niveles div.es b::before { content: "▲ "; }
+  .nivel-frase { margin: 10px 0 0; font-size: 16px; text-align: center; }
+  .barra-region { height: 6px; background: #e4e4e4; margin-top: 4px; }
+  .barra-region i { display: block; height: 100%; }
+  .acciones .btn { padding: 9px 18px; }
+  .acciones-fin { display: flex; justify-content: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--linea); }
+  .firma { display: none; }
+  @media print {
+    @page { size: A4; margin: 12mm; }
+    .franja { position: static; }
+    .franja, .niveles div, .barra-region, .barra-region i, th, tr.reg td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .acciones, .acciones-fin, #r-estado, details.registro, .volver { display: none !important; }
+    details summary { display: block !important; font-weight: bold; color: var(--tinta); }
+    .firma { display: flex; gap: 40px; margin-top: 46px; font-size: 14px; }
+    .firma span { flex: 1; border-top: 1px solid var(--tinta); padding-top: 4px; text-align: center; }
+    .pantalla { min-height: 0 !important; height: auto !important; }
+  }
 </style>
 </head>
 <body>
+<div class="franja" aria-hidden="true"></div>
 
 <!-- 1. Datos del estudiante -->
 <section id="inicio" class="pantalla activa">
   <div class="tarjeta">
+    <a class="volver" href="index.html">← Volver al inicio</a>
     <p class="uni">Universidad Bolivariana del Ecuador</p>
-    <h1>EMSEO · Aplicación digital</h1>
+    <h1>EMSEO | Digital para marcar</h1>
     <p class="sub">Evaluación de Memoria Semántica mediante Evocación Oral</p>
-    <div class="campo"><label for="f-nombre">Estudiante:</label><input id="f-nombre" autocomplete="off"></div>
+    <div class="campo"><label for="f-nombre">Estudiante:</label><input id="f-nombre" autocomplete="off" aria-describedby="err-inicio"></div>
     <div class="dos">
       <div class="campo"><label for="f-grado">Grado:</label><input id="f-grado" autocomplete="off"></div>
       <div class="campo"><label for="f-paralelo">Paralelo:</label><input id="f-paralelo" autocomplete="off"></div>
@@ -153,10 +203,11 @@
     <div class="campo"><label for="f-fecha">Fecha:</label><input id="f-fecha" type="date"></div>
     <div class="centro">
       <button class="btn" id="b-comenzar">Comenzar</button>
+      <p class="error-msg" id="err-inicio" role="alert"></p>
     </div>
     <p class="nota" id="nota-retomar" hidden></p>
-    <p class="nota">Muestre cada foto al estudiante, haga las tres preguntas en voz alta y marque 0, 1 o 2 según la rúbrica (PDF aparte).<br>
-      Atajos: teclas <b>0</b>, <b>1</b>, <b>2</b> para marcar · <b>Enter</b> o <b>→</b> para avanzar · <b>←</b> para volver.</p>
+    <p class="nota">Muestre cada foto al estudiante, haga las tres preguntas en voz alta y marque 0, 1 o 2 según la rúbrica impresa.<br>
+      Atajos: teclas <b>0</b>, <b>1</b>, <b>2</b> para marcar | <b>Enter</b> o <b>→</b> para avanzar | <b>←</b> para volver.</p>
   </div>
 </section>
 
@@ -170,9 +221,10 @@
   </div>
   <div class="docente">
     <div class="practica-guia">
-      <b>Ejemplo de práctica · no se califica.</b> Pregunte: «¿Qué es esto?» · «¿A qué grupo pertenece? Por ejemplo:
-      ¿es una planta, un animal, una cosa…?» · «Cuéntame, ¿qué sabes del perro?». Si responde un lugar, explique una
+      <b>Ejemplo de práctica | no se califica.</b> Pregunte: «¿Qué es esto?» | «¿A qué grupo pertenece? Por ejemplo:
+      ¿es una planta, un animal, una cosa…?» | «Cuéntame, ¿qué sabes del perro?». Si responde un lugar, explique una
       sola vez que el grupo es «qué tipo de cosa es».
+      <div class="carga" id="carga" aria-live="polite"></div>
     </div>
     <div class="nav"><span></span><button class="btn" id="b-practica">Empezar la evaluación →</button></div>
   </div>
@@ -189,7 +241,7 @@
 <section id="lamina" class="pantalla">
   <div class="escenario">
     <div class="marco">
-      <img id="l-foto" alt="Lámina">
+      <img id="l-foto" alt="Foto de la lámina">
       <div class="pestana" id="l-num">1</div>
     </div>
   </div>
@@ -199,9 +251,17 @@
       <button class="btn sec" id="b-ant">← Anterior</button>
       <div class="progreso"><div id="barra"></div></div>
       <span class="contador" id="contador">1 / 27</span>
-            <button class="btn" id="b-sig" disabled>Siguiente →</button>
+      <button class="btn" id="b-sig" disabled>Siguiente →</button>
     </div>
+    <p class="falta" id="falta" aria-live="polite"></p>
   </div>
+</section>
+
+<!-- 3b. Evaluación terminada (los resultados no se muestran frente al estudiante) -->
+<section id="terminado" class="pantalla">
+  <h1>Evaluación terminada</h1>
+  <p>¡Muchas gracias por participar!</p>
+  <button class="btn sec solo-doc" id="b-ver-resultados">Solo para el docente: ver resultados</button>
 </section>
 
 <!-- 4. Resultados -->
@@ -211,10 +271,11 @@
     <h1>Resultados EMSEO</h1>
     <p class="sub" id="r-datos"></p>
     <div class="grande">
-      <div><span>Puntaje total (PT)</span><strong id="r-total"></strong></div>
-      <div><span>Puntaje sobre 100 (P₁₀₀ = PT ÷ 162 × 100)</span><strong id="r-100"></strong></div>
+      <div><span>Puntaje sobre 100</span><strong id="r-100"></strong></div>
+      <div><span>Puntaje total (de 162)</span><strong id="r-total"></strong></div>
     </div>
     <div class="niveles" id="r-niveles"></div>
+    <p class="nivel-frase" id="r-nivel"></p>
     <table>
       <thead><tr><th>Región</th><th>Evocación</th><th>Categorización</th><th>Caracterización</th><th>Total</th></tr></thead>
       <tbody id="r-tabla"></tbody>
@@ -222,25 +283,26 @@
     <details>
       <summary>Ver puntaje de cada concepto</summary>
       <table>
-        <thead><tr><th>N.º · Concepto</th><th>E</th><th>C</th><th>Ca</th><th>Total</th></tr></thead>
+        <thead><tr><th>N.º | Concepto</th><th>Evocación</th><th>Categorización</th><th>Caracterización</th><th>Total</th></tr></thead>
         <tbody id="r-detalle"></tbody>
       </table>
     </details>
-    <details>
-      <summary id="r-bit-titulo">Registro de cambios</summary>
+    <details class="registro">
+      <summary id="r-bit-titulo">Historial de cambios</summary>
       <table class="bitacora">
         <thead><tr><th>Hora</th><th>Acción</th><th>Concepto</th><th>Pregunta</th><th>Antes</th><th>Después</th></tr></thead>
         <tbody id="r-bitacora"></tbody>
       </table>
     </details>
+    <div class="firma"><span>Firma del docente</span><span>Fecha</span></div>
     <div class="acciones">
-      <button class="btn" id="b-enviar">Enviar a la hoja de Google</button>
-      <button class="btn sec" id="b-csv">Descargar CSV</button>
-      <button class="btn sec" id="b-bitacora">Descargar registro de cambios</button>
+      <button class="btn" id="b-csv">Descargar resultados (Excel)</button>
+      <button class="btn sec" id="b-enviar" hidden>Confirmar envío</button>
+      <button class="btn sec" id="b-bitacora">Descargar historial de cambios</button>
       <button class="btn sec" id="b-imprimir">Imprimir</button>
       <button class="btn sec" id="b-revisar">Revisar respuestas</button>
-      <button class="btn sec" id="b-nuevo">Nuevo estudiante</button>
     </div>
+    <div class="acciones-fin"><button class="btn" id="b-nuevo">Siguiente estudiante →</button></div>
     <p class="nota" id="r-estado"></p>
   </div>
 </section>
@@ -261,7 +323,7 @@ const REGIONES = [
     conceptos: ["Cóndor", "Curiquingue", "Totora", "Minga", "Chagra", "Páramo", "Laguna"] },
   { nombre: "Amazonía", color: "var(--amazonia)", mapa: "img_laminas/mapa_3.png",
     conceptos: ["Jaguar", "Tapir", "Guacamayo", "Armadillo", "Guayusa", "Achiote", "Canasto", "Cascada", "Bosque tropical"] },
-  { nombre: "Insular", titulo: "INSULAR · GALÁPAGOS", color: "var(--insular)", mapa: "img_laminas/mapa_4.png",
+  { nombre: "Insular", titulo: "INSULAR | GALÁPAGOS", color: "var(--insular)", mapa: "img_laminas/mapa_4.png",
     conceptos: ["Fragata", "Cactus", "Pesca artesanal", "Islote"] },
 ];
 const SECCIONES = [
@@ -323,15 +385,57 @@ function hoyISO() {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 }
 
+
+// ---------------------------------------------------------------- utilidades de diseño (revisión de 10 especialistas)
+const TEXTO_REGION = { "Costa": "#1a1a1a" };  // el dorado de la Costa necesita texto oscuro para leerse
+function ponerRegion(r) {
+  document.documentElement.style.setProperty("--region", r.color);
+  document.documentElement.style.setProperty("--region-texto", TEXTO_REGION[r.nombre] || "#fff");
+}
+function ponerFoto(img, src) {  // la foto queda oculta hasta que carga: nunca se ve la anterior con el número nuevo
+  const marco = img.parentElement;
+  const aviso = marco.querySelector(".aviso-foto");
+  if (aviso) aviso.remove();
+  img.classList.add("cargando");
+  img.onload = () => img.classList.remove("cargando");
+  img.onerror = () => {
+    const a = document.createElement("div");
+    a.className = "aviso-foto";
+    a.textContent = "No se pudo cargar la foto. Revise el internet y vuelva a abrir esta lámina.";
+    marco.appendChild(a);
+  };
+  img.src = src;
+}
+function precargarFotos(destino) {  // descarga las 28 fotos al empezar y avisa si alguna falla
+  let listas = 0, fallas = 0;
+  const total = 28, el = document.getElementById(destino);
+  const pintar = () => {
+    if (!el) return;
+    el.textContent = fallas ? `No se pudieron cargar ${fallas} foto(s). Revise el internet antes de seguir.`
+      : listas < total ? `Preparando las fotos… ${listas} de ${total}` : "Fotos listas.";
+  };
+  ["ejemplo", ...Array.from({ length: 27 }, (_, i) => String(i + 1).padStart(2, "0"))].forEach(n => {
+    const im = new Image();
+    im.onload = () => { listas++; pintar(); };
+    im.onerror = () => { fallas++; pintar(); };
+    im.src = `img_laminas/${n}.jpg`;
+  });
+  pintar();
+}
+function fechaCorta(t) {
+  try { return new Date(t).toLocaleString("es-EC", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }); }
+  catch (e) { return ""; }
+}
+
 // ---------------------------------------------------------------- registro y envío en vivo
 const sync = crearSync({ url: SHEET_URL, estado: () => estado, guardar, foto: payload, indicador: "sync" });
 const LOG = (accion, info) => sync.registrar(accion, info);
 const infoC = (n, clave) => ({ n, concepto: CONCEPTOS[n - 1].nombre,
   pregunta: clave ? SECCIONES.find(s => s.clave === clave).nombre : "" });
-function archivar() {  // copia local de cada evaluación cerrada (no se pierde nada en esta compu)
+function archivar(e = estado) {  // copia local de cada evaluación cerrada (no se pierde nada en esta compu)
   try {
     const a = JSON.parse(localStorage.getItem("emseo-archivo") || "[]");
-    a.push(estado);
+    a.push(e);
     localStorage.setItem("emseo-archivo", JSON.stringify(a.slice(-300)));
   } catch (e) { /* sin almacenamiento */ }
 }
@@ -342,18 +446,26 @@ const previo = cargar();
 if (previo && previo.datos && previo.datos.nombre) {
   const hechos = previo.puntos.filter(completo).length;
   $("nota-retomar").hidden = false;
-  $("nota-retomar").innerHTML = `Hay una evaluación sin terminar (${iniciales(previo.datos.nombre)}, ${hechos}/27). ` +
+  const ultima = (previo.bitacora || []).slice(-1)[0];
+  $("nota-retomar").innerHTML = `Hay una evaluación guardada de <b>${iniciales(previo.datos.nombre)}</b> ` +
+    `(${hechos} de 27 láminas${ultima ? ", " + fechaCorta(ultima.t) : ""}). ` +
     `<button class="btn sec" id="b-retomar">Retomar</button>`;
   $("b-retomar").onclick = () => { estado = previo; LOG("Retomó la evaluación"); irAPaso(estado.paso); };
 }
 
 $("b-comenzar").onclick = () => {
   const nombre = $("f-nombre").value.trim();
-  if (!nombre) { $("f-nombre").focus(); $("f-nombre").style.borderBottomColor = "#b00"; return; }
+  if (!nombre) {
+    $("f-nombre").focus(); $("f-nombre").style.borderBottomColor = "#b00"; $("f-nombre").setAttribute("aria-invalid", "true");
+    $("err-inicio").textContent = "Escriba el nombre del estudiante para comenzar.";
+    return;
+  }
+  $("err-inicio").textContent = ""; $("f-nombre").removeAttribute("aria-invalid"); $("f-nombre").style.borderBottomColor = "";
   const pendiente = cargar();
   if (pendiente && pendiente.datos && pendiente.datos.nombre && !pendiente.enviado && !pendiente.csv &&
-      !confirm("Hay una evaluación guardada (" + iniciales(pendiente.datos.nombre) + ") que no se descargó ni envió. " +
-               "Si comienza, se reemplaza. ¿Continuar?")) return;
+      !confirm("Hay una evaluación guardada de " + iniciales(pendiente.datos.nombre) + " que no se descargó ni envió. " +
+               "Se guardará en el archivo de esta computadora antes de empezar con el nuevo estudiante. ¿Continuar?")) return;
+  if (pendiente && pendiente.datos && pendiente.datos.nombre) archivar(pendiente);  // nunca se borra sin guardar
   estado = nuevoEstado();
   estado.datos = {
     nombre, grado: $("f-grado").value.trim(), paralelo: $("f-paralelo").value.trim(),
@@ -361,6 +473,7 @@ $("b-comenzar").onclick = () => {
   };
   guardar();
   LOG("Inicio de la evaluación", { detalle: [estado.datos.grado, estado.datos.paralelo].filter(Boolean).join(" ") });
+  precargarFotos("carga");
   mostrar("practica");
 };
 $("b-practica").onclick = () => { LOG("Hizo el ejemplo de práctica"); irAPaso(0); };
@@ -377,7 +490,7 @@ function irAPaso(i) {
   }
   estado.paso = destino;
   guardar();
-  if (estado.paso >= PASOS.length) return mostrarResultados();
+  if (estado.paso >= PASOS.length) { mostrar("terminado"); return; }
   const paso = PASOS[estado.paso];
   if (paso.tipo === "portada") return mostrarPortada(paso.region);
   mostrarLamina(paso.n);
@@ -385,19 +498,20 @@ function irAPaso(i) {
 
 function mostrarPortada(ri) {
   const r = REGIONES[ri];
-  document.documentElement.style.setProperty("--region", r.color);
+  ponerRegion(r);
   $("p-titulo").textContent = "REGIÓN " + (r.titulo || r.nombre.toUpperCase());
   $("p-mapa").src = r.mapa;
   mostrar("portada");
 }
 $("b-portada").onclick = () => irAPaso(estado.paso + 1);
+$("b-ver-resultados").onclick = () => mostrarResultados();
 
 // ---------------------------------------------------------------- lámina
 let filaActiva = 0;
 function mostrarLamina(n) {
   const c = CONCEPTOS[n - 1];
-  document.documentElement.style.setProperty("--region", REGIONES[c.region].color);
-  $("l-foto").src = `img_laminas/${String(n).padStart(2, "0")}.jpg`;
+  ponerRegion(REGIONES[c.region]);
+  ponerFoto($("l-foto"), `img_laminas/${String(n).padStart(2, "0")}.jpg`);
   $("l-num").textContent = n;
   $("contador").textContent = `${n} / ${CONCEPTOS.length}`;
   $("barra").style.width = `${(estado.puntos.filter(completo).length / CONCEPTOS.length) * 100}%`;
@@ -419,6 +533,8 @@ function pintarFilas(n) {
       </div>
     </div>`).join("");
   $("b-sig").disabled = !completo(p);
+  const faltan = SECCIONES.filter(s => p[s.clave] == null).map(s => s.nombre);
+  $("falta").textContent = faltan.length ? "Falta marcar: " + faltan.join(", ") : "";
   $("b-ant").disabled = estado.paso === 0;
 }
 
@@ -450,6 +566,7 @@ $("b-ant").onclick = () => irAPaso(estado.paso - 1);
 
 document.addEventListener("keydown", e => {
   if (e.target.tagName === "INPUT") return;
+  if (e.key === "Enter" && e.target.closest && e.target.closest("button, a, summary")) return;
   const paso = PASOS[estado.paso];
   if ($("lamina").classList.contains("activa") && paso && paso.tipo === "lamina") {
     if (["0", "1", "2"].includes(e.key)) { marcar(SECCIONES[filaActiva].clave, Number(e.key)); e.preventDefault(); }
@@ -486,18 +603,20 @@ function mostrarResultados() {
   const d = estado.datos;
   const { total, p100, nivel } = calcular();
   $("r-datos").textContent = [d.nombre, [d.grado, d.paralelo].filter(Boolean).join(" "), d.evaluador && "Docente: " + d.evaluador, d.fecha]
-    .filter(Boolean).join(" · ");
+    .filter(Boolean).join(" | ");
   $("r-total").textContent = `${total} / ${MAX}`;
   $("r-100").textContent = `${p100} / 100`;
   $("r-niveles").innerHTML = NIVELES.map(n =>
     `<div class="${n.nombre === nivel ? "es" : ""}"><b>${n.nombre}</b><br>${n.min}–${n.max}</div>`).join("");
+  $("r-nivel").innerHTML = `Nivel referencial: <b>${nivel}</b> (${p100} / 100). Orienta la lectura del docente; no es un diagnóstico.`;
 
   const filas = REGIONES.map((r, ri) => {
     const ps = estado.puntos.filter((_, i) => CONCEPTOS[i].region === ri);
     const s = k => ps.reduce((t, p) => t + (p[k] || 0), 0);
     const max = ps.length * 2;
+    const tot = s("a") + s("b") + s("c"), pct = Math.round(tot / (max * 3) * 100);
     return `<tr><td>${r.nombre}</td><td>${s("a")} / ${max}</td><td>${s("b")} / ${max}</td><td>${s("c")} / ${max}</td>
-      <td>${s("a") + s("b") + s("c")} / ${max * 3}</td></tr>`;
+      <td>${tot} / ${max * 3} (${pct} %)<div class="barra-region"><i style="width:${pct}%;background:${r.color}"></i></div></td></tr>`;
   });
   const t = k => estado.puntos.reduce((s, p) => s + (p[k] || 0), 0);
   filas.push(`<tr class="reg"><td>Total</td><td>${t("a")} / 54</td><td>${t("b")} / 54</td><td>${t("c")} / 54</td><td>${total} / 162</td></tr>`);
@@ -505,18 +624,17 @@ function mostrarResultados() {
 
   $("r-detalle").innerHTML = CONCEPTOS.map((c, i) => {
     const p = estado.puntos[i];
-    return `<tr><td>${c.n} · ${c.nombre}</td><td>${p.a ?? "—"}</td><td>${p.b ?? "—"}</td><td>${p.c ?? "—"}</td><td>${sumaConcepto(p)}</td></tr>`;
+    return `<tr><td>${c.n} | ${c.nombre}</td><td>${p.a ?? "—"}</td><td>${p.b ?? "—"}</td><td>${p.c ?? "—"}</td><td>${sumaConcepto(p)}</td></tr>`;
   }).join("");
 
-  const resumen = `PT ${total}/162 · ${p100}/100 · ${nivel}`;
+  const resumen = `PT ${total}/162 | ${p100}/100 | ${nivel}`;
   if (!estado.terminada) { estado.terminada = true; LOG("Terminó la evaluación", { detalle: resumen }); }
   else LOG("Vio los resultados", { detalle: resumen });
   pintarBitacora();
 
-  $("b-enviar").disabled = !SHEET_URL;
-  $("b-enviar").title = SHEET_URL ? "" : "Falta configurar el Apps Script (ver apps_script.gs)";
-  $("r-estado").textContent = SHEET_URL ? "Los datos se envían solos mientras evalúa; este botón confirma que todo llegó."
-    : "Google Sheets sin configurar: todo queda guardado en esta compu. Use «Descargar CSV» y «Descargar registro de cambios».";
+  $("b-enviar").hidden = !SHEET_URL;  // sin conexión configurada no se muestra
+  $("r-estado").textContent = SHEET_URL ? "Los resultados se guardan en línea mientras evalúa. «Confirmar envío» revisa que todo haya llegado."
+    : "Los resultados quedan guardados en esta computadora. Descargue una copia con «Descargar resultados (Excel)».";
   mostrar("resultados");
 }
 
@@ -524,7 +642,7 @@ function pintarBitacora() {
   const b = estado.bitacora || [];
   const hora = t => new Date(t).toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
   $("r-bit-titulo").textContent = `Registro de cambios (${b.length} acciones)`;
-  $("r-bitacora").innerHTML = b.map(x => `<tr><td>${hora(x.t)}</td><td>${x.accion}</td><td>${x.n ? x.n + " · " + x.concepto : ""}</td>
+  $("r-bitacora").innerHTML = b.map(x => `<tr><td>${hora(x.t)}</td><td>${x.accion}</td><td>${x.n ? x.n + " | " + x.concepto : ""}</td>
     <td>${x.pregunta}</td><td>${x.antes}</td><td>${x.despues || x.detalle || ""}</td></tr>`).join("");
 }
 
@@ -537,8 +655,8 @@ $("b-enviar").onclick = async () => {
   estado.enviado = ok;
   guardar();
   pintarBitacora();
-  $("r-estado").textContent = ok ? "Todo enviado y confirmado por la hoja de Google. ✔"
-    : "No se pudo confirmar el envío (¿sin internet?). Se reintentará solo; mientras tanto descargue el CSV de respaldo.";
+  $("r-estado").textContent = ok ? "Todo llegó y quedó guardado en línea. ✔"
+    : "No se pudo confirmar el envío (¿sin internet?). Se reintentará solo; mientras tanto descargue los resultados.";
   $("b-enviar").disabled = false;
 };
 
@@ -564,7 +682,7 @@ $("b-csv").onclick = () => {
   const blob = new Blob(["﻿" + [enc.join(";"), ...filas].join("\r\n")], { type: "text/csv;charset=utf-8" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `EMSEO_${(d.nombre || "estudiante").replace(/\s+/g, "_")}_${d.fecha}.csv`;
+  a.download = `EMSEO_resultados_${(d.nombre || "estudiante").replace(/\s+/g, "_")}_${d.fecha}.csv`;
   a.click();
   URL.revokeObjectURL(a.href);
   estado.csv = true;
@@ -573,6 +691,11 @@ $("b-csv").onclick = () => {
 };
 
 $("b-imprimir").onclick = () => window.print();
+window.addEventListener("beforeprint", () => {  // al imprimir se abre el detalle por concepto (no el historial)
+  document.querySelectorAll("#resultados details:not(.registro)").forEach(d => { d.open = true; });
+  document.title = `EMSEO_${(estado.datos.nombre || "estudiante").replace(/\s+/g, "_")}_${estado.datos.fecha || ""}`;
+});
+window.addEventListener("afterprint", () => { document.title = "EMSEO | Digital para marcar"; });
 $("b-revisar").onclick = () => { LOG("Volvió a revisar las respuestas"); irAPaso(1); };
 $("b-nuevo").onclick = () => {
   const enNube = SHEET_URL && sync.pendientes() === 0;
@@ -586,9 +709,10 @@ $("b-nuevo").onclick = () => {
   archivar();
   borrarGuardado();
   estado = nuevoEstado();
-  ["f-nombre", "f-grado", "f-paralelo"].forEach(id => $(id).value = "");
+  $("f-nombre").value = "";  // grado, paralelo, docente y fecha se conservan para el siguiente estudiante
   $("nota-retomar").hidden = true;
   mostrar("inicio");
+  $("f-nombre").focus();
 };
 </script>
 </body>
