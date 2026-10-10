@@ -1,0 +1,9 @@
+# Controles antes de cada commit (método de Ignacio). Todo local: no descarga nada.
+repos:
+  - repo: local
+    hooks:
+      - id: gitleaks
+        name: gitleaks (secretos en lo que se va a commitear, oculto)
+        entry: C:/tools/gitleaks/gitleaks.exe git --pre-commit --staged --redact --no-banner
+        language: system
+        pass_filenames: false
