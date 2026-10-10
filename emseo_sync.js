@@ -66,7 +66,8 @@ function crearSync({ url, estado, guardar, foto, indicador }) {
       await vaciarCola();
       if (leerCola().length) { estadoIndicador(); clearTimeout(temporizador); temporizador = setTimeout(enviar, 15000); return false; }
     }
-    const lote = pendientes();
+    const evaluacion = asegurar();
+    const lote = evaluacion.bitacora.filter(x => x.seq > evaluacion.sincronizadoHasta);
     if (!lote.length) { estadoIndicador(); return true; }
     enviando = true;
     try {
@@ -74,9 +75,13 @@ function crearSync({ url, estado, guardar, foto, indicador }) {
       const r = await fetch(url, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(cuerpo) });
       const j = await r.json().catch(() => null);
       if (!r.ok || !j || !j.ok) throw new Error("sin confirmación");
-      const e = asegurar();
-      e.sincronizadoHasta = Math.max(e.sincronizadoHasta, Number(j.hasta) || lote[lote.length - 1].seq);
-      guardar();
+      // La respuesta puede llegar después de pasar al siguiente estudiante.
+      // Nunca aplicar su número de orden a otra evaluación.
+      if (asegurar().id === evaluacion.id) {
+        const e = asegurar();
+        e.sincronizadoHasta = Math.max(e.sincronizadoHasta, Number(j.hasta) || lote[lote.length - 1].seq);
+        guardar();
+      }
       enviando = false;
       if (pendientes().length) return enviar();  // llegaron más mientras se enviaba
       estadoIndicador();
@@ -94,17 +99,21 @@ function crearSync({ url, estado, guardar, foto, indicador }) {
   // lo que faltaba enviar queda guardado aquí y se manda solo cuando vuelve la conexión.
   const CLAVE_COLA = "emseo-cola-envios";
   const leerCola = () => { try { return JSON.parse(localStorage.getItem(CLAVE_COLA) || "[]"); } catch (e) { return []; } };
-  const escribirCola = c => { try { localStorage.setItem(CLAVE_COLA, JSON.stringify(c)); } catch (e) { /* sin almacenamiento */ } };
+  const escribirCola = c => {
+    try { localStorage.setItem(CLAVE_COLA, JSON.stringify(c)); return true; }
+    catch (e) { return false; }
+  };
   function encolar() {  // guarda lo pendiente del estudiante actual antes de cambiar de estudiante
     const lote = pendientes();
-    if (!url || !lote.length) return;
+    if (!url || !lote.length) return true;
     const cola = leerCola();
     cola.push({ ...foto(), tipo: "sync", eventos: lote });
-    escribirCola(cola);
+    if (!escribirCola(cola)) return false;
     const e = asegurar();
     e.sincronizadoHasta = lote[lote.length - 1].seq;  // ya quedó a cargo de la cola
     guardar();
     setTimeout(vaciarCola, 300);
+    return true;
   }
   let vaciando = false;
   async function vaciarCola() {

@@ -101,12 +101,13 @@
       <div class="g" id="r-g"></div>
       <dl class="dl" id="r-dl"></dl>
       <div class="acciones">
-        <button class="btn sec" id="b-enviar" hidden>Confirmar envío</button>
+        <button class="btn sec" id="b-enviar">Guardar PDF y confirmar envío</button>
+        <button class="btn sec" id="b-confirmar-pdf" hidden>Ya comprobé el PDF descargado</button>
         <button class="btn sec" id="b-imprimir">Imprimir</button>
         <button class="btn sec" id="b-revisar">Revisar respuestas</button>
-        <button class="btn btn-fin" id="b-nuevo">Siguiente estudiante <span class="arr">&rarr;</span></button>
+        <button class="btn btn-fin" id="b-nuevo" disabled>Siguiente estudiante <span class="arr">&rarr;</span></button>
       </div>
-      <p class="nota" id="r-estado"></p>
+      <p class="nota" id="r-estado" role="status" aria-live="polite"></p>
     </aside>
     <div class="e-main">
       <div class="card score">
@@ -125,7 +126,7 @@
         </div>
         <div class="card chart">
           <h3>Por pregunta</h3>
-          <p class="cap">Suma de las 27 láminas, máximo 54 cada una</p>
+          <p class="cap">Suma de las 20 láminas, máximo 40 por pregunta</p>
           <div id="r-preguntas"></div>
           <div class="tabla-scroll"><table class="mx">
             <thead><tr><th>Región</th><th>Evoc.</th><th>Categ.</th><th>Caract.</th><th>Total</th></tr></thead>
@@ -148,6 +149,8 @@
 <span class="sync" id="sync" hidden></span>
 
 <script src="emseo_sync.js"></script>
+<script src="jspdf.umd.min.js"></script>
+<script src="emseo_pdf.js"></script>
 <script>
 // ---------------------------------------------------------------- configuración
 // URL del Apps Script (Implementar → Aplicación web). Vacía = no se envía nada.
@@ -176,20 +179,27 @@ const NIVELES = [
   { nombre: "Promedio alto", min: 80, max: 89 },
   { nombre: "Superior", min: 90, max: 100 },
 ];
-const MAX = 162;
 const CLAVE_GUARDADO = "emseo-en-curso";
+const LAMINAS_20 = [1, 2, 3, 5, 8, 9, 11, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24, 25, 26];
 
 // Lista plana de pasos: portada de cada región + una lámina por concepto
 const CONCEPTOS = [];
-const PASOS = [];
+const PASOS_BANCO = [];
 REGIONES.forEach((r, ri) => {
-  PASOS.push({ tipo: "portada", region: ri });
+  PASOS_BANCO.push({ tipo: "portada", region: ri });
   r.conceptos.forEach(nombre => {
     const n = CONCEPTOS.length + 1;
     CONCEPTOS.push({ n, nombre, region: ri });
-    PASOS.push({ tipo: "lamina", n });
+    PASOS_BANCO.push({ tipo: "lamina", n });
   });
 });
+const LAMINAS_27 = CONCEPTOS.map(c => c.n);
+const seleccionDe = (e = estado) => Array.isArray(e?.laminas) && e.laminas.length === 20 ? e.laminas : LAMINAS_27;
+const conceptosDe = (e = estado) => seleccionDe(e).map(n => CONCEPTOS[n - 1]);
+const maxDe = (e = estado) => seleccionDe(e).length * 6;
+const pasosDe = e => PASOS_BANCO.filter(p => p.tipo === "portada" || seleccionDe(e).includes(p.n));
+let PASOS = pasosDe({ laminas: LAMINAS_20 });
+function usarEstado(e) { estado = e; PASOS = pasosDe(e); }
 
 // ---------------------------------------------------------------- estado
 let estado = nuevoEstado();
@@ -197,10 +207,15 @@ function nuevoId() {  // declaración de función: está disponible antes de «l
   return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now() + "-" + Math.random().toString(36).slice(2);
 }
 function nuevoEstado() {
-  return { id: nuevoId(), datos: {}, paso: 0, puntos: CONCEPTOS.map(() => ({ a: null, b: null, c: null })) };
+  return { id: nuevoId(), datos: {}, paso: 0, laminas: [...LAMINAS_20], puntos: CONCEPTOS.map(() => ({ a: null, b: null, c: null })) };
 }
 function guardar() {
-  try { localStorage.setItem(CLAVE_GUARDADO, JSON.stringify(estado)); } catch (e) { /* sin almacenamiento */ }
+  try { localStorage.setItem(CLAVE_GUARDADO, JSON.stringify(estado)); return true; }
+  catch (e) {
+    if (!guardar.avisado) alert("Este navegador no pudo guardar la evaluación localmente. Termine y guarde el PDF antes de cerrar la página.");
+    guardar.avisado = true;
+    return false;
+  }
 }
 function cargar() {
   try { const s = localStorage.getItem(CLAVE_GUARDADO); return s ? JSON.parse(s) : null; } catch (e) { return null; }
@@ -245,15 +260,15 @@ function ponerFoto(img, src) {  // la foto queda oculta hasta que carga: nunca s
   };
   img.src = src;
 }
-function precargarFotos(destino) {  // descarga las 27 fotos al empezar y avisa si alguna falla
+function precargarFotos(destino) {  // descarga las fotos de esta evaluación
   let listas = 0, fallas = 0;
-  const total = 27, el = document.getElementById(destino);
+  const numeros = seleccionDe(), total = numeros.length, el = document.getElementById(destino);
   const pintar = () => {
     if (!el) return;
     el.textContent = fallas ? `No se pudieron cargar ${fallas} foto(s). Revise el internet antes de seguir.`
       : listas < total ? `Preparando las fotos… ${listas} de ${total}` : "Fotos listas.";
   };
-  Array.from({ length: 27 }, (_, i) => String(i + 1).padStart(2, "0")).forEach(n => {
+  numeros.map(n => String(n).padStart(2, "0")).forEach(n => {
     const im = new Image();
     im.onload = () => { listas++; pintar(); };
     im.onerror = () => { fallas++; pintar(); };
@@ -327,16 +342,16 @@ function archivar(e = estado) {  // copia local de cada evaluación cerrada (no 
 $("f-fecha").value = hoyISO();
 const previo = cargar();
 if (previo && previo.datos && previo.datos.nombre) {
-  const hechos = previo.puntos.filter(completo).length;
+  const hechos = seleccionDe(previo).filter(n => completo(previo.puntos[n - 1])).length;
   $("nota-retomar").hidden = false;
   const ultima = (previo.bitacora || []).slice(-1)[0];
   $("nota-retomar").innerHTML = `Hay una evaluación guardada de <b>${iniciales(previo.datos.nombre)}</b> ` +
-    `(${hechos} de 27 láminas${ultima ? ", " + fechaCorta(ultima.t) : ""}). ` +
+    `(${hechos} de ${seleccionDe(previo).length} láminas${ultima ? ", " + fechaCorta(ultima.t) : ""}). ` +
     `<button class="btn sec" id="b-retomar">Retomar</button>`;
-  $("b-retomar").onclick = () => { estado = previo; LOG("Retomó la evaluación"); irAPaso(estado.paso); };
+  $("b-retomar").onclick = () => { usarEstado(previo); LOG("Retomó la evaluación"); irAPaso(estado.paso); };
 }
 
-$("b-comenzar").onclick = () => {
+$("b-comenzar").onclick = async () => {
   const nombre = $("f-nombre").value.trim();
   if (!nombre) {
     $("f-nombre").focus(); $("f-nombre").classList.add("falta-dato"); $("f-nombre").setAttribute("aria-invalid", "true");
@@ -350,8 +365,19 @@ $("b-comenzar").onclick = () => {
   if (pendiente && pendiente.datos && pendiente.datos.nombre && !pendiente.enviado &&
       !confirm("Hay una evaluación guardada de " + iniciales(pendiente.datos.nombre) + " que no se terminó. " +
                "Se guardará en el archivo de esta computadora antes de empezar con el nuevo estudiante. ¿Continuar?")) return;
-  if (pendiente && pendiente.datos && pendiente.datos.nombre) { encolarDe(pendiente); archivar(pendiente); }  // nunca se borra sin guardar
-  estado = nuevoEstado();
+  if (pendiente && pendiente.datos && pendiente.datos.nombre) {
+    const actual = estado;
+    estado = pendiente;
+    let datosPendientes;
+    try { datosPendientes = payload(); } finally { estado = actual; }
+    try {
+      const respaldo = await guardarPdfEmseo(datosPendientes, { pendiente: true });
+      if (!respaldo.confirmado && !confirm("Se inició la descarga del PDF de la evaluación anterior. ¿Comprobó que el archivo esté guardado?")) return;
+    } catch (error) { alert("No se guardó el PDF de la evaluación anterior. Vuelva a intentarlo antes de empezar otra."); return; }
+    if (!encolarDe(pendiente)) { alert("No se pudo guardar la cola de envío de la evaluación anterior. No se iniciará otra evaluación."); return; }
+    archivar(pendiente);
+  }
+  usarEstado(nuevoEstado());
   estado.datos = {
     nombre, grado: $("f-grado").value.trim(), paralelo: $("f-paralelo").value.trim(),
     evaluador: $("f-docente").value.trim(), fecha: $("f-fecha").value || hoyISO(), ...m.datos,
@@ -404,7 +430,7 @@ function pintarFilas(n) {
       <div class="seg">${botonesPunto(s.clave, p[s.clave], s.nombre)}</div>
     </div>`).join("");
   $("b-sig").disabled = !completo(p);
-  $("b-sig").innerHTML = (estado.paso === PASOS.length - 1 ? "Finalizar evaluación" : "Siguiente") + ' <span class="arr">&rarr;</span>';
+  $("b-sig").innerHTML = (estado.paso === PASOS.length - 1 ? "Finalizar, enviar y guardar PDF" : "Siguiente") + ' <span class="arr">&rarr;</span>';
   const faltan = SECCIONES.map((s, i) => p[s.clave] == null ? i + 1 : 0).filter(Boolean);
   $("falta").textContent = faltan.length ? textoFalta(faltan) : "";
   $("b-ant").disabled = estado.paso === 0;
@@ -454,8 +480,8 @@ document.addEventListener("keydown", e => {
 
 // ---------------------------------------------------------------- resultados
 function calcular() {
-  const total = estado.puntos.reduce((s, p) => s + sumaConcepto(p), 0);
-  const p100 = Math.round((total / MAX) * 100);
+  const total = seleccionDe().reduce((s, n) => s + sumaConcepto(estado.puntos[n - 1]), 0);
+  const p100 = Math.round((total / maxDe()) * 100);
   return { total, p100, nivel: nivelDe(p100).nombre };
 }
 
@@ -463,10 +489,10 @@ function payload() {
   const { total, p100, nivel } = calcular();
   return {
     ...estado.datos, id: estado.id, modalidad: "oral",
-    puntaje_total: total, puntaje_max: MAX, puntaje_100: p100, nivel,
-    respuestas: CONCEPTOS.map((c, i) => ({
+    puntaje_total: total, puntaje_max: maxDe(), puntaje_100: p100, nivel,
+    respuestas: conceptosDe().map(c => ({
       n: c.n, concepto: c.nombre, region: REGIONES[c.region].nombre,
-      a: estado.puntos[i].a, b: estado.puntos[i].b, c: estado.puntos[i].c,
+      a: estado.puntos[c.n - 1].a, b: estado.puntos[c.n - 1].b, c: estado.puntos[c.n - 1].c,
     })),
   };
 }
@@ -479,17 +505,19 @@ function ponerRegion(r) {
   document.documentElement.style.setProperty("--region", `var(--${k})`);
   document.documentElement.style.setProperty("--region-ink", `var(--${k}-ink)`);
 }
-function pintarTrack(el, actual, hecho) {  // 27 tramos agrupados y coloreados por región
-  let k = 0;
-  el.innerHTML = REGIONES.map((r, ri) => `<span class="grp" style="--n:${r.conceptos.length};--c:var(--${CLAVE_REG[ri]})">` +
-    r.conceptos.map(() => { k++; return `<s class="${k === actual ? "now" : hecho(k) ? "done" : ""}"></s>`; }).join("") + "</span>").join("");
+function pintarTrack(el, actual, hecho) {  // tramos de las láminas elegidas
+  el.innerHTML = REGIONES.map((r, ri) => {
+    const numeros = seleccionDe().filter(n => CONCEPTOS[n - 1].region === ri);
+    return `<span class="grp" style="--n:${numeros.length};--c:var(--${CLAVE_REG[ri]})">` +
+      numeros.map(n => `<s class="${n === actual ? "now" : hecho(n) ? "done" : ""}"></s>`).join("") + "</span>";
+  }).join("");
 }
 function barraLamina(prefijo, n, hecho) {
   const c = CONCEPTOS[n - 1], r = REGIONES[c.region];
   ponerRegion(r);
   $(prefijo + "region").textContent = r.nombre;
   pintarTrack($(prefijo + "track"), n, hecho);
-  $(prefijo + "contador").innerHTML = `${n} <span>de ${CONCEPTOS.length}</span>`;
+  $(prefijo + "contador").innerHTML = `${seleccionDe().indexOf(n) + 1} <span>de ${seleccionDe().length}</span>`;
 }
 function mostrarPortada(ri) {
   const r = REGIONES[ri];
@@ -515,7 +543,7 @@ function pintarInforme(extra) {  // cabecera, puntaje, escala, barras y tabla re
   const filasDl = [["Docente", d.evaluador], ["Sexo", d.sexo], ["Lengua materna", d.lengua], ["Origen de la familia", d.region_origen],
     ["Necesidades especiales", d.nee === "Sí" && d.nee_cual ? "Sí (" + d.nee_cual + ")" : d.nee], ...extra, ["Fecha", fechaLarga(d.fecha)]];
   $("r-dl").innerHTML = filasDl.filter(x => x[1]).map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join("");
-  $("r-total").innerHTML = `${total}<small> / ${MAX}</small>`;
+  $("r-total").innerHTML = `${total}<small> / ${maxDe()}</small>`;
   $("r-nivel").textContent = nivel;
   $("r-100").textContent = `${p100} sobre 100`;
   const iN = Math.max(0, NIVELES.findIndex(x => x.nombre === nivel)), N = NIVELES[iN];
@@ -528,58 +556,90 @@ function pintarInforme(extra) {  // cabecera, puntaje, escala, barras y tabla re
     `<div class="bar-bg"><i style="width:${max ? (v / max * 100).toFixed(1) : 0}%"></i></div></div>`;
   const sumaK = (ps, k) => ps.reduce((t, p) => t + (p[k] || 0), 0);
   const sumaT = ps => ps.reduce((t, p) => t + sumaConcepto(p), 0);
-  const porRegion = REGIONES.map((r, ri) => estado.puntos.filter((_, i) => CONCEPTOS[i].region === ri));
+  const visibles = seleccionDe().map(n => estado.puntos[n - 1]);
+  const porRegion = REGIONES.map((r, ri) => seleccionDe().filter(n => CONCEPTOS[n - 1].region === ri).map(n => estado.puntos[n - 1]));
   $("r-regiones").innerHTML = REGIONES.map((r, ri) =>
     barra(r.extra ? r.nombre + " | " + r.extra : r.nombre, sumaT(porRegion[ri]), porRegion[ri].length * 6, `var(--${CLAVE_REG[ri]})`)).join("");
-  $("r-preguntas").innerHTML = SECCIONES.map((s, i) => barra(s.nombre, sumaK(estado.puntos, s.clave), 54, ["#15202E", "#4A5568", "#7E8898"][i])).join("");
+  $("r-preguntas").innerHTML = SECCIONES.map((s, i) => barra(s.nombre, sumaK(visibles, s.clave), seleccionDe().length * 2, ["#15202E", "#4A5568", "#7E8898"][i])).join("");
   $("r-tabla").innerHTML = REGIONES.map((r, ri) => {
     const ps = porRegion[ri], m = ps.length * 2;
     return `<tr style="--c:var(--${CLAVE_REG[ri]})"><td><i></i>${r.nombre}</td>` +
       SECCIONES.map(s => `<td>${sumaK(ps, s.clave)}<span> / ${m}</span></td>`).join("") + `<td>${sumaT(ps)}<span> / ${m * 3}</span></td></tr>`;
-  }).join("") + `<tr class="total"><td>Total</td>` + SECCIONES.map(s => `<td>${sumaK(estado.puntos, s.clave)}<span> / 54</span></td>`).join("") +
-    `<td>${total}<span> / ${MAX}</span></td></tr>`;
+  }).join("") + `<tr class="total"><td>Total</td>` + SECCIONES.map(s => `<td>${sumaK(visibles, s.clave)}<span> / ${seleccionDe().length * 2}</span></td>`).join("") +
+    `<td>${total}<span> / ${maxDe()}</span></td></tr>`;
   return { total, p100, nivel };
 }
 
 // ---------------------------------------------------------------- cierre
-function finalizar() {  // «Finalizar evaluación»: los resultados ya están guardados (navegador y Google Sheets)
+function finalizar() {  // Al cerrar, se solicita el PDF y se confirma el envío.
   LOG("Finalizó la evaluación");
   mostrarResultados();
+  cerrarConRespaldo();
 }
 function encolarDe(e) {  // deja en la cola de envío lo pendiente de otra evaluación (sin internet no se pierde)
-  const antes = estado; estado = e; sync.encolar(); estado = antes;
+  const antes = estado; estado = e;
+  try { return sync.encolar(); } finally { estado = antes; }
 }
 
 function mostrarResultados() {
   const { total, p100, nivel } = pintarInforme([]);
 
-  $("r-detalle").innerHTML = CONCEPTOS.map((c, i) => {
-    const p = estado.puntos[i];
-    return `<tr style="--c:var(--${CLAVE_REG[c.region]})"><td><i></i>${c.n} | ${c.nombre}</td><td>${p.a ?? "—"}</td><td>${p.b ?? "—"}</td><td>${p.c ?? "—"}</td><td>${sumaConcepto(p)}</td></tr>`;
+  $("r-detalle").innerHTML = conceptosDe().map((c, i) => {
+    const p = estado.puntos[c.n - 1];
+    return `<tr style="--c:var(--${CLAVE_REG[c.region]})"><td><i></i>${i + 1} | ${c.nombre}</td><td>${p.a ?? "—"}</td><td>${p.b ?? "—"}</td><td>${p.c ?? "—"}</td><td>${sumaConcepto(p)}</td></tr>`;
   }).join("");
 
-  const resumen = `PT ${total}/162 | ${p100}/100 | ${nivel}`;
+  const resumen = `PT ${total}/${maxDe()} | ${p100}/100 | ${nivel}`;
   if (!estado.terminada) { estado.terminada = true; LOG("Terminó la evaluación", { detalle: resumen }); }
   else LOG("Vio los resultados", { detalle: resumen });
 
-  $("b-enviar").hidden = !SHEET_URL;  // sin conexión configurada no se muestra
-  $("r-estado").textContent = SHEET_URL ? "Los resultados se guardan en línea mientras evalúa. «Confirmar envío» revisa que todo haya llegado."
-    : "";
+  actualizarCierre();
+  $("r-estado").textContent = "Resultados listos. Se preparará el PDF y se confirmará el envío a Google Sheets.";
   mostrar("resultados");
 }
 
-
-$("b-enviar").onclick = async () => {
+const huellaPdf = () => JSON.stringify(payload());
+function pdfActual() { return estado.pdfConfirmado && estado.pdfHuella === huellaPdf(); }
+function actualizarCierre() {
+  $("b-nuevo").disabled = !pdfActual();
+  $("b-confirmar-pdf").hidden = !estado.pdfDescargadoPendiente || pdfActual();
+}
+let cerrando = false;
+async function cerrarConRespaldo() {
+  if (cerrando) return;
+  cerrando = true;
   $("b-enviar").disabled = true;
-  $("r-estado").textContent = "Enviando…";
-  LOG("Pidió confirmar el envío a Google Sheets");
-  // Solo se da por enviado si el Apps Script confirma cada cambio
-  const ok = await sync.enviar();
-  estado.enviado = ok;
-  guardar();
-  $("r-estado").textContent = ok ? "Todo llegó y quedó guardado en línea. ✔"
-    : "No se pudo confirmar el envío (¿sin internet?). Se reintentará solo; mientras tanto descargue los resultados.";
-  $("b-enviar").disabled = false;
+  try {
+    if (!pdfActual()) {
+      estado.enviado = false;
+      $("r-estado").textContent = "Elija dónde guardar el PDF de esta evaluación.";
+      const respaldo = await guardarPdfEmseo(payload());
+      estado.pdfHuella = huellaPdf();
+      estado.pdfConfirmado = respaldo.confirmado;
+      estado.pdfDescargadoPendiente = !respaldo.confirmado;
+      guardar();
+      LOG("Generó respaldo PDF", { detalle: respaldo.archivo });
+    }
+    actualizarCierre();
+    $("r-estado").textContent = "PDF preparado. Confirmando el envío a Google Sheets…";
+    LOG("Pidió confirmar el envío a Google Sheets");
+    const ok = await sync.enviar();
+    estado.enviado = ok;
+    guardar();
+    $("r-estado").textContent = (pdfActual() ? "PDF guardado. " : "Descarga del PDF iniciada: compruebe el archivo y pulse «Ya comprobé el PDF descargado». ") +
+      (ok ? "Envío confirmado en Google Sheets. ✔" : "Google Sheets aún no confirmó el envío; los cambios seguirán pendientes para reintento.");
+    actualizarCierre();
+  } catch (error) {
+    $("r-estado").textContent = "No se guardó el PDF. Pulse «Guardar PDF y confirmar envío» para volver a intentarlo.";
+  } finally { cerrando = false; $("b-enviar").disabled = false; }
+}
+$("b-enviar").onclick = cerrarConRespaldo;
+$("b-confirmar-pdf").onclick = () => {
+  if (estado.pdfHuella !== huellaPdf()) return;
+  estado.pdfConfirmado = true; estado.pdfDescargadoPendiente = false; guardar();
+  actualizarCierre();
+  $("r-estado").textContent = estado.enviado ? "PDF comprobado y envío confirmado en Google Sheets. ✔"
+    : "PDF comprobado. Google Sheets aún no confirmó el envío; se reintentará automáticamente.";
 };
 
 
@@ -592,15 +652,16 @@ window.addEventListener("beforeprint", () => {  // al imprimir se abre el detall
 window.addEventListener("afterprint", () => { document.title = "Baúl Semántico | Digital para marcar"; });
 $("b-revisar").onclick = () => { LOG("Volvió a revisar las respuestas"); irAPaso(1); };
 $("b-nuevo").onclick = () => {
+  if (!pdfActual()) { $("r-estado").textContent = "Guarde y compruebe el PDF antes de pasar al siguiente estudiante."; return; }
   const aviso = !SHEET_URL || sync.pendientes() === 0
     ? "¿Empezar con un nuevo estudiante? Esta evaluación queda guardada."
     : "Hay cambios que todavía no llegan a Google Sheets (¿sin internet?). Se enviarán solos cuando vuelva la conexión. ¿Empezar con un nuevo estudiante?";
   if (!confirm(aviso)) return;
   LOG("Cerró la evaluación (nuevo estudiante)");
-  sync.encolar();
+  if (!sync.encolar()) { $("r-estado").textContent = "No se pudo guardar la cola de envío en este navegador. Conserve esta evaluación y vuelva a intentar el envío."; return; }
   archivar();
   borrarGuardado();
-  estado = nuevoEstado();
+  usarEstado(nuevoEstado());
   $("f-nombre").value = "";
   limpiarMuestra();  // grado, paralelo, docente y fecha se conservan para el siguiente estudiante
   $("nota-retomar").hidden = true;
