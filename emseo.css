@@ -65,6 +65,7 @@ h1, h2, h3, p { margin: 0; }
 .sync { display: inline-flex; align-items: center; font-size: 13px; color: var(--muted); white-space: nowrap; }
 .sync[data-tipo="ok"] { color: var(--ok); }
 .sync[data-tipo="pendiente"] { color: var(--aviso); }
+.sync[data-tipo="error"] { color: var(--error); font-weight: 600; white-space: normal; }
 body.vista-nino .sync { display: none; }
 
 /* ---------- inicio ---------- */
@@ -314,6 +315,7 @@ details.card > div { padding: 0 24px 20px; }
   .sync { font-size: 0; width: 12px; height: 12px; border-radius: 50%; background: #9AA1AC; }
   .sync[data-tipo="ok"] { background: var(--ok); }
   .sync[data-tipo="pendiente"] { background: #C08A00; }
+  .sync[data-tipo="error"] { background: var(--error); }
   .l-body, .c-body { padding: 12px 16px 16px; gap: 14px; }
   .q { padding: 12px 14px 14px; margin-bottom: 10px; }
   .q-top { margin-bottom: 8px; }

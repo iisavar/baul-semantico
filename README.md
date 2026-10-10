@@ -20,6 +20,10 @@ se conserva para las evaluaciones anteriores; las siete fotos omitidas no aparec
 
 Al finalizar, la app prepara un PDF con los datos y resultados del estudiante y confirma el envío a Google Sheets. En Chrome o Edge de escritorio, el docente elige dónde guardar el PDF y la app comprueba que terminó la escritura antes de habilitar «Siguiente estudiante». En otros navegadores se inicia una descarga y el docente debe comprobar el archivo antes de continuar. Si Sheets no confirma la recepción, la app lo indica y mantiene el envío pendiente para reintentarlo. Las respuestas escritas pendientes de calificación también generan un PDF sin puntajes.
 
+**Si Google Sheets rechaza un envío** (por ejemplo, porque el Apps Script publicado es una versión anterior), la app no lo reintenta para siempre: lo aparta, el indicador muestra «⚠ Google Sheets rechazó…» y los demás envíos siguen. Al tocar el indicador se puede volver a intentar. Un corte de internet no cuenta como rechazo: eso se reintenta solo.
+
+**Datos en esta computadora:** mientras una evaluación no está confirmada por Google Sheets, queda guardada en el navegador (para no perderla). Las evaluaciones cerradas y ya confirmadas se borran solas del navegador 30 días después de cerrarse, y nunca se guardan más de 100 confirmadas. Las respuestas escritas que esperan calificación quedan hasta que se califican. En computadoras compartidas, al terminar la jornada conviene cerrar la sesión del navegador o borrar los datos del sitio.
+
 | Archivo | Contenido |
 |---|---|
 | `emseo.css` | Estilo común de las dos apps |
@@ -29,7 +33,7 @@ Al finalizar, la app prepara un PDF con los datos y resultados del estudiante y 
 | `img_laminas/CREDITOS.md` | Fuentes y licencias de marimba, bosque tropical y pesca artesanal |
 
 **Publicación:** el Apps Script desplegado debe actualizarse primero con `apps_script.gs` del proyecto y una nueva
-versión de la implementación. La versión antigua rechaza los envíos de 20 respuestas. Después se publican estos
+versión de la **misma** implementación (la URL no cambia); al abrir la URL `/exec` debe responder `"version":"2026-10-10-20"`. La versión antigua rechaza los envíos de 20 respuestas. Después se publican estos
 archivos en GitHub Pages. Una evaluación antigua de 27 sigue aceptándose y conserva su escala de 162 puntos.
 
 Créditos de las fotografías: ver [`CREDITOS.md`](CREDITOS.md).

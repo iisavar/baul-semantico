@@ -411,18 +411,19 @@ function limpiarMuestra() {  // la institución se conserva; los datos del niño
 // ---------------------------------------------------------------- registro y envío en vivo
 const sync = crearSync({ url: SHEET_URL, estado: () => estado, guardar, foto: payload, indicador: "sync" });
 const LOG = (accion, info) => sync.registrar(accion, info);
+const MSJ_RECHAZO = () => "Google Sheets rechazó este envío (" + (sync.ultimoRechazo() || "formato no aceptado") +
+  "). La evaluación queda guardada en esta computadora y en el PDF; avise al responsable del proyecto.";
 const NOMBRE_SECCION = { a: "Evocación", b: "Categorización", c: "Caracterización" };
 const CAMPO = { "r-a": ["a", "Evocación"], "r-b": ["b", "Categorización"], "r-c1": ["c1", "Caracterización (1)"],
                 "r-c2": ["c2", "Caracterización (2)"], "r-c3": ["c3", "Caracterización (3)"] };
 const infoC = (n, pregunta) => ({ n, concepto: CONCEPTOS[n - 1].nombre, pregunta: pregunta || "" });
 const quien = () => estado.escribe === "docente" ? "escribió el docente" : "escribió el estudiante";
-function archivar(e = estado) {  // copia local de cada evaluación cerrada (no se pierde nada en esta compu)
-  try {
-    const a = JSON.parse(localStorage.getItem("emseo-archivo-escrita") || "[]");
-    a.push(e);
-    localStorage.setItem("emseo-archivo-escrita", JSON.stringify(a.slice(-300)));
-  } catch (e) { /* sin almacenamiento */ }
+// Copia local de cada evaluación cerrada. Se borra sola 30 días después de cerrarse si Google ya
+// confirmó todos sus envíos; lo no confirmado nunca se borra (BS-05, ver emseo_sync.js).
+function archivar(e = estado) {
+  sync.archivar("emseo-archivo-escrita", e);
 }
+sync.limpiarArchivo("emseo-archivo-escrita");
 function cerrarCampo() {  // registra lo escrito en el casillero activo antes de cambiar de lámina
   guardarRespuestas();
   Object.keys(CAMPO).forEach(registrarCampo);
@@ -865,7 +866,8 @@ async function cerrarConRespaldo() {
     estado.enviado = ok;
     guardar();
     $("r-estado").textContent = (pdfActual() ? "PDF guardado. " : "Descarga del PDF iniciada: compruebe el archivo y pulse «Ya comprobé el PDF descargado». ") +
-      (ok ? "Envío confirmado en Google Sheets. ✔" : "Google Sheets aún no confirmó el envío; los cambios seguirán pendientes para reintento.");
+      (ok ? "Envío confirmado en Google Sheets. ✔" : sync.rechazadoActual() ? MSJ_RECHAZO()
+        : "Google Sheets aún no confirmó el envío; los cambios seguirán pendientes para reintento.");
     actualizarCierre();
   } catch (error) {
     $("r-estado").textContent = "No se guardó el PDF. Pulse «Guardar PDF y confirmar envío» para volver a intentarlo.";
@@ -877,6 +879,7 @@ $("b-confirmar-pdf").onclick = () => {
   estado.pdfConfirmado = true; estado.pdfDescargadoPendiente = false; guardar();
   actualizarCierre();
   $("r-estado").textContent = estado.enviado ? "PDF comprobado y envío confirmado en Google Sheets. ✔"
+    : sync.rechazadoActual() ? "PDF comprobado. " + MSJ_RECHAZO()
     : "PDF comprobado. Google Sheets aún no confirmó el envío; se reintentará automáticamente.";
 };
 $("b-imprimir").onclick = () => window.print();
