@@ -1,18 +1,27 @@
-# Créditos de las láminas digitales actualizadas
+# Créditos de las láminas
 
-## Fotos cambiadas el 11/10/2026 (solo el elemento, bien enfocado)
+## Imágenes de las 20 láminas (`01.jpg` a `20.jpg`)
 
-Guayacán: [fuente](https://commons.wikimedia.org/wiki/File:Guayac%C3%A1n_amarillo_(Tabebuia_chrysantha)_(15414582978).jpg), foto de Alejandro Bayer Tamayo. Licencia CC BY-SA 2.0. Se recortó a 4:3 sin otra modificación.
+Las imágenes de las 20 láminas las proporcionó la **Universidad Bolivariana del Ecuador (UBE)** en su cuadernillo
+parametrizado del instrumento («Mi cuadernillo de palabras», octubre de 2026). Se usan tal cual: el proyecto solo las
+encuadra en 4:3 sobre fondo blanco (1024 × 768 en la web, 1600 × 1200 para imprimir), sin recortar ni retocar el objeto.
 
-Sin obligación de crédito (dominio público o CC0); se indican por transparencia:
+| N.º | Lámina | N.º | Lámina |
+|---|---|---|---|
+| 01 | Ballena | 11 | Anaconda |
+| 02 | Cacao | 12 | Achiote |
+| 03 | Paja toquilla (sombrero) | 13 | Guayusa |
+| 04 | Marimba | 14 | Piraña |
+| 05 | Guayacán | 15 | Canasto |
+| 06 | Cóndor | 16 | Tortuga gigante |
+| 07 | Poncho | 17 | Roca volcánica (nombre provisional) |
+| 08 | Maíz | 18 | Cactus |
+| 09 | Volcán | 19 | Lobo marino |
+| 10 | Cuy | 20 | Lancha (nombre provisional) |
 
-- Garza: [fuente](https://www.flickr.com/photos/43322816@N08/4324603377), U. S. Fish and Wildlife Service - Northeast Region, Dominio público.
-- Laguna: [fuente](https://commons.wikimedia.org/wiki/File:Laguna_Quilotoa.jpg), 5snake5, CC0.
-- Jaguar: [fuente](https://www.inaturalist.org/photos/93734836), Jean-Paul Boerekamps, CC0.
-- Guacamayo: [fuente](https://www.rawpixel.com/image/6041658/photo-image-white-background-public-domain-nature), Autor no indicado, CC0.
-- Armadillo: [fuente](https://commons.wikimedia.org/wiki/File:Dasypus_novemcinctus.jpg), Hollingsworth, John and Karen, Dominio público.
-- Fragata: [fuente](https://commons.wikimedia.org/wiki/File:Great_Frigatebird_at_Genovesa.JPG), Jason Corriveau, Dominio público.
+## Mapas (`mapa_1.png` a `mapa_4.png`, `region_1.png` a `region_4.png`)
 
-## Imágenes generadas con IA (11/10/2026)
+Los mapas de Ecuador con cada región resaltada se generaron en el proyecto a partir de un archivo de provincias de uso libre.
 
-Para que cada lámina muestre solo el elemento, bien enfocado, estas imágenes se generaron con inteligencia artificial (generación de imágenes de OpenAI, vía Codex). No son fotografías de un lugar o persona real. Los prompts están en `docs/prompts_fotos_ia.md` del proyecto: Marimba, Curiquingue, Minga, Páramo, Tapir, Achiote, Canasto, Cascada, Bosque tropical, Cactus, Pesca artesanal.
+Las fotografías que se usaron antes (fotos de licencia libre e imágenes generadas con IA) dejaron de usarse el 11/10/2026;
+sus créditos se conservan en el archivo del proyecto.

@@ -15,8 +15,9 @@ automáticamente en la hoja de Google Sheets privada del proyecto. Si el interne
 queda guardado en el navegador y se envía solo cuando vuelve la conexión.
 **Ningún dato de estudiantes se guarda en este repositorio.**
 
-La evaluación usa las mismas **20 láminas** para todos los estudiantes (máximo **120 puntos**). El banco de 27 fotos
-se conserva para las evaluaciones anteriores; las siete fotos omitidas no aparecen en una evaluación nueva.
+La evaluación usa las mismas **20 láminas** para todos los estudiantes (máximo **120 puntos**): los 20 conceptos y las
+imágenes del cuadernillo parametrizado de la UBE (5 por región). Una evaluación guardada en el navegador con las láminas
+anteriores no se puede retomar: la app la aparta, sin borrarla, y avisa en la pantalla de inicio.
 
 Al finalizar, la app prepara un PDF con los datos y resultados del estudiante y confirma el envío a Google Sheets. En Chrome o Edge de escritorio, el docente elige dónde guardar el PDF y la app comprueba que terminó la escritura antes de habilitar «Siguiente estudiante». En otros navegadores se inicia una descarga y el docente debe comprobar el archivo antes de continuar. Si Sheets no confirma la recepción, la app lo indica y mantiene el envío pendiente para reintentarlo. Las respuestas escritas pendientes de calificación también generan un PDF sin puntajes.
 
@@ -29,12 +30,12 @@ Al finalizar, la app prepara un PDF con los datos y resultados del estudiante y 
 | `emseo.css` | Estilo común de las dos apps |
 | `emseo_sync.js` | Registro de cambios y envío en vivo a Google Sheets |
 | `emseo_pdf.js` y `jspdf.umd.min.js` | Generación del PDF local; jsPDF se distribuye bajo licencia MIT (`JSPDF_LICENSE.txt`) |
-| `img_laminas/` | Banco de 27 fotografías y mapas; la app aplica 20 |
-| `img_laminas/CREDITOS.md` | Fuentes y licencias de marimba, bosque tropical y pesca artesanal |
+| `img_laminas/` | Las 20 imágenes de las láminas (proporcionadas por la UBE) y los mapas |
+| `img_laminas/CREDITOS.md` | Origen de las imágenes y de los mapas |
 
 **Publicación:** el Apps Script desplegado debe actualizarse primero con `apps_script.gs` del proyecto y una nueva
-versión de la **misma** implementación (la URL no cambia); al abrir la URL `/exec` debe responder `"version":"2026-10-10-20"`. La versión antigua rechaza los envíos de 20 respuestas. Después se publican estos
-archivos en GitHub Pages. Una evaluación antigua de 27 sigue aceptándose y conserva su escala de 162 puntos.
+versión de la **misma** implementación (la URL no cambia); al abrir la URL `/exec` debe responder `"version":"2026-10-11-ube"`. La versión nueva prepara la hoja otra vez: la pestaña
+«Resultados» anterior (otros conceptos) se conserva con otro nombre. Después se publican estos archivos en GitHub Pages.
 
 Créditos de las fotografías: ver [`CREDITOS.md`](CREDITOS.md).
 El logo es propiedad de la Universidad Bolivariana del Ecuador y se usa en este proyecto institucional de la UBE.

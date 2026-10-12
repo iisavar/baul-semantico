@@ -157,15 +157,19 @@
 // Ver la guía «Guia_conectar_Google_Sheets.pdf» (se entrega aparte). Con la URL puesta, todo se envía en vivo.
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbx9ytp4FQIBF0jdNvSUiNbx-DNFb-uQQVC4V42blL6W68-BOWibD7t4aotn1nn1LYXP/exec";
 
+// Banco de 20 láminas del cuadernillo parametrizado de la UBE (octubre de 2026; BRIEF §35).
+// Los nombres de las láminas 17 y 20 son PROVISIONALES: se cambian solo aquí.
+const NOMBRE_17 = "Roca volcánica", NOMBRE_20 = "Lancha";
+const BANCO = "ube-2026-10-11";  // marca las evaluaciones hechas con este banco
 const REGIONES = [
   { nombre: "Costa", color: "var(--costa)", mapa: "img_laminas/mapa_1.png",
-    conceptos: ["Garza", "Ceibo", "Guayacán", "Paja toquilla", "Marimba", "Estero", "Bosque seco"] },
+    conceptos: ["Ballena", "Cacao", "Paja toquilla", "Marimba", "Guayacán"] },
   { nombre: "Sierra", color: "var(--sierra)", mapa: "img_laminas/mapa_2.png",
-    conceptos: ["Cóndor", "Curiquingue", "Totora", "Minga", "Chagra", "Páramo", "Laguna"] },
+    conceptos: ["Cóndor", "Poncho", "Maíz", "Volcán", "Cuy"] },
   { nombre: "Amazonía", color: "var(--amazonia)", mapa: "img_laminas/mapa_3.png",
-    conceptos: ["Jaguar", "Tapir", "Guacamayo", "Armadillo", "Guayusa", "Achiote", "Canasto", "Cascada", "Bosque tropical"] },
+    conceptos: ["Anaconda", "Achiote", "Guayusa", "Piraña", "Canasto"] },
   { nombre: "Insular", titulo: "INSULAR | GALÁPAGOS", extra: "Galápagos", color: "var(--insular)", mapa: "img_laminas/mapa_4.png",
-    conceptos: ["Fragata", "Cactus", "Pesca artesanal", "Islote"] },
+    conceptos: ["Tortuga gigante", NOMBRE_17, "Cactus", "Lobo marino", NOMBRE_20] },
 ];
 const SECCIONES = [
   { clave: "a", nombre: "Evocación", pregunta: "¿Qué es esto?" },
@@ -180,7 +184,7 @@ const NIVELES = [
   { nombre: "Superior", min: 90, max: 100 },
 ];
 const CLAVE_GUARDADO = "emseo-en-curso";
-const LAMINAS_20 = [1, 2, 3, 5, 8, 9, 11, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24, 25, 26];
+const LAMINAS_20 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
 
 // Lista plana de pasos: portada de cada región + una lámina por concepto
 const CONCEPTOS = [];
@@ -193,8 +197,7 @@ REGIONES.forEach((r, ri) => {
     PASOS_BANCO.push({ tipo: "lamina", n });
   });
 });
-const LAMINAS_27 = CONCEPTOS.map(c => c.n);
-const seleccionDe = (e = estado) => Array.isArray(e?.laminas) && e.laminas.length === 20 ? e.laminas : LAMINAS_27;
+const seleccionDe = () => LAMINAS_20;
 const conceptosDe = (e = estado) => seleccionDe(e).map(n => CONCEPTOS[n - 1]);
 const maxDe = (e = estado) => seleccionDe(e).length * 6;
 const pasosDe = e => PASOS_BANCO.filter(p => p.tipo === "portada" || seleccionDe(e).includes(p.n));
@@ -207,8 +210,25 @@ function nuevoId() {  // declaración de función: está disponible antes de «l
   return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now() + "-" + Math.random().toString(36).slice(2);
 }
 function nuevoEstado() {
-  return { id: nuevoId(), datos: {}, paso: 0, laminas: [...LAMINAS_20], puntos: CONCEPTOS.map(() => ({ a: null, b: null, c: null })) };
+  return { id: nuevoId(), banco: BANCO, datos: {}, paso: 0, laminas: [...LAMINAS_20], puntos: CONCEPTOS.map(() => ({ a: null, b: null, c: null })) };
 }
+// Una evaluación guardada con las láminas anteriores (otros conceptos) no se puede retomar ni reenviar con este
+// banco: se aparta, sin borrarla, en «emseo-version-anterior» (BRIEF §35). Devuelve cuántas se apartaron.
+const delBanco = e => !!e && e.banco === BANCO;
+function apartarVersionAnterior(clave, lista = false) {
+  try {
+    const s = localStorage.getItem(clave);
+    if (!s) return 0;
+    const datos = JSON.parse(s);
+    const viejas = lista ? (Array.isArray(datos) ? datos.filter(e => !delBanco(e)) : []) : (delBanco(datos) ? [] : [datos]);
+    if (!viejas.length) return 0;
+    const apartadas = JSON.parse(localStorage.getItem("emseo-version-anterior") || "[]");
+    localStorage.setItem("emseo-version-anterior", JSON.stringify([...apartadas, ...viejas]));
+    if (lista) localStorage.setItem(clave, JSON.stringify(datos.filter(delBanco))); else localStorage.removeItem(clave);
+    return viejas.length;
+  } catch (e) { return 0; }
+}
+const APARTADAS = apartarVersionAnterior("emseo-en-curso");
 function guardar() {
   try { localStorage.setItem(CLAVE_GUARDADO, JSON.stringify(estado)); return true; }
   catch (e) {
@@ -350,6 +370,10 @@ if (previo && previo.datos && previo.datos.nombre) {
     `(${hechos} de ${seleccionDe(previo).length} láminas${ultima ? ", " + fechaCorta(ultima.t) : ""}). ` +
     `<button class="btn sec" id="b-retomar">Retomar</button>`;
   $("b-retomar").onclick = () => { usarEstado(previo); LOG("Retomó la evaluación"); irAPaso(estado.paso); };
+} else if (APARTADAS) {
+  $("nota-retomar").hidden = false;
+  $("nota-retomar").textContent = "Había una evaluación sin terminar hecha con las láminas anteriores. " +
+    "Quedó guardada aparte en este navegador y no se puede retomar con las láminas nuevas.";
 }
 
 $("b-comenzar").onclick = async () => {
